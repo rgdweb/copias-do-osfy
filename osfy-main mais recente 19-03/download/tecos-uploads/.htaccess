@@ -1,0 +1,42 @@
+# Proteger arquivos PHP
+<FilesMatch "\.(php|phtml)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Permitir acesso apenas aos scripts específicos
+<Files "upload.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+<Files "delete.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# Bloquear acesso ao config e logs
+<Files "config.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+<Files "uploads.log">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Permitir imagens
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Desabilitar execução de scripts na pasta de imagens
+Options -ExecCGI -Indexes
+
+# Headers de segurança
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+</IfModule>

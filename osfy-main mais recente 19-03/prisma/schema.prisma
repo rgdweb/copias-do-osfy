@@ -1,0 +1,378 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SuperAdmin {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Loja {
+  id                 String         @id @default(cuid())
+  nome               String
+  slug               String         @unique
+  responsavel        String
+  telefone           String
+  whatsapp           String
+  email              String         @unique
+  senhaHash          String
+  cidade             String
+  estado             String
+  endereco           String
+  descricao          String?
+  logo               String?
+  horarioAtendimento String?
+  tiposServico       String?
+  status             String         @default("pendente")
+  plano              String         @default("basico")
+  precoPlano         Float          @default(99.90)
+  criadoEm           DateTime       @default(now())
+  atualizadoEm       DateTime       @updatedAt
+  expiraEm           DateTime?
+  
+  // Sistema de Trial (7 dias grátis)
+  trialAte           DateTime?      // Data limite do período de trial
+  trialUsado         Boolean        @default(false)  // Se já usou o período de trial
+  
+  // Integração Asaas
+  asaasCustomerId    String?        // ID do customer no Asaas
+  
+  clientes           Cliente[]
+  ordens             OrdemServico[]
+  usuarios           Usuario[]
+  categorias         Categoria[]
+  produtos           Produto[]
+  vendas             Venda[]
+  caixas             Caixa[]
+  faturas            Fatura[]
+}
+
+model Usuario {
+  id           String         @id @default(cuid())
+  lojaId       String
+  nome         String
+  email        String
+  senhaHash    String
+  foto         String?
+  tipo         String         @default("tecnico")
+  ativo        Boolean        @default(true)
+  criadoEm     DateTime       @default(now())
+  atualizadoEm DateTime       @updatedAt
+  ordens       OrdemServico[]
+  loja         Loja           @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+
+  @@unique([lojaId, email])
+}
+
+model Cliente {
+  id           String         @id @default(cuid())
+  lojaId       String
+  nome         String
+  telefone     String
+  email        String?
+  cpf          String?
+  endereco     String?
+  criadoEm     DateTime       @default(now())
+  atualizadoEm DateTime       @updatedAt
+  loja         Loja           @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  ordens       OrdemServico[]
+
+  @@unique([lojaId, telefone])
+}
+
+model OrdemServico {
+  id              String        @id @default(cuid())
+  lojaId          String
+  clienteId       String
+  tecnicoId       String?
+  numeroOs        Int
+  equipamento     String
+  marca           String?
+  modelo          String?
+  imeiSerial      String?
+  senhaAparelho   String?
+  problema        String
+  acessorios      String?
+  estadoAparelho  String?
+  diagnostico     String?
+  solucao         String?
+  status          String        @default("recebido")
+  orcamento       Float?
+  aprovado        Boolean?
+  dataAprovacao   DateTime?
+  valorServico    Float?
+  valorPecas      Float?
+  valorTotal      Float?
+  pago            Boolean       @default(false)
+  formaPagamento  String?
+  dataPagamento   DateTime?
+  dataCriacao     DateTime      @default(now())
+  dataPrevisao    DateTime?
+  dataFinalizacao DateTime?
+  atualizadoEm    DateTime      @updatedAt
+  assinatura      Assinatura?
+  fotos           FotoOS[]
+  historico       HistoricoOS[]
+  tecnico         Usuario?      @relation(fields: [tecnicoId], references: [id])
+  cliente         Cliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  loja            Loja          @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+
+  @@unique([lojaId, numeroOs])
+}
+
+model HistoricoOS {
+  id        String       @id @default(cuid())
+  osId      String
+  descricao String
+  status    String?
+  criadoEm  DateTime     @default(now())
+  ordem     OrdemServico @relation(fields: [osId], references: [id], onDelete: Cascade)
+}
+
+model FotoOS {
+  id        String       @id @default(cuid())
+  osId      String
+  arquivo   String
+  descricao String?
+  tipo      String       @default("recebimento")
+  criadoEm  DateTime     @default(now())
+  ordem     OrdemServico @relation(fields: [osId], references: [id], onDelete: Cascade)
+}
+
+model Assinatura {
+  id       String       @id @default(cuid())
+  osId     String       @unique
+  imagem   String
+  nome     String?
+  criadoEm DateTime     @default(now())
+  ordem    OrdemServico @relation(fields: [osId], references: [id], onDelete: Cascade)
+}
+
+model Configuracao {
+  id           String   @id @default(cuid())
+  chave        String   @unique
+  valor        String
+  descricao    String?
+  atualizadoEm DateTime @updatedAt
+
+  @@index([chave])
+}
+
+model ContadorOS {
+  id           String   @id @default(cuid())
+  lojaId       String   @unique
+  ultimoNumero Int      @default(0)
+  atualizadoEm DateTime @updatedAt
+}
+
+// ==================== PDV - Ponto de Venda ====================
+
+model Categoria {
+  id           String    @id @default(cuid())
+  lojaId       String
+  nome         String
+  descricao    String?
+  ativo        Boolean   @default(true)
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+  loja         Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  produtos     Produto[]
+
+  @@unique([lojaId, nome])
+}
+
+model Produto {
+  id              String    @id @default(cuid())
+  lojaId          String
+  categoriaId     String?
+  codigoBarras    String?   @unique
+  codigoInterno   String?
+  nome            String
+  descricao       String?
+  precoCusto      Float?
+  precoVenda      Float
+  estoque         Int       @default(0)
+  estoqueMinimo   Int       @default(0)
+  unidade         String    @default("UN")
+  localizacao     String?
+  ativo           Boolean   @default(true)
+  permiteVendaSemEstoque Boolean @default(true)
+  imagem          String?
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+  loja            Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  categoria       Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  itensVenda      ItemVenda[]
+
+  @@unique([lojaId, codigoInterno])
+  @@index([codigoBarras])
+}
+
+model Caixa {
+  id              String    @id @default(cuid())
+  lojaId          String
+  usuarioAbertura String
+  usuarioFechamento String?
+  saldoInicial    Float
+  saldoFinal      Float?
+  totalVendas     Float     @default(0)
+  totalDinheiro   Float     @default(0)
+  totalPix        Float     @default(0)
+  totalCartaoCredito Float  @default(0)
+  totalCartaoDebito Float  @default(0)
+  totalOutros     Float     @default(0)
+  totalSangrias   Float     @default(0)
+  totalReforcos   Float     @default(0)
+  status          String    @default("aberto")
+  observacaoAbertura String?
+  observacaoFechamento String?
+  dataAbertura    DateTime  @default(now())
+  dataFechamento  DateTime?
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+  loja            Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  vendas          Venda[]
+  movimentacoes   MovimentacaoCaixa[]
+
+  @@index([lojaId, status])
+}
+
+model Venda {
+  id              String    @id @default(cuid())
+  lojaId          String
+  caixaId         String
+  numeroVenda     Int
+  clienteNome     String?
+  clienteCpf      String?
+  subtotal        Float
+  desconto        Float     @default(0)
+  total           Float
+  formaPagamento  String
+  valorPago       Float?
+  troco           Float?
+  status          String    @default("concluida")
+  observacao      String?
+  tipo            String    @default("produto")
+  dataVenda       DateTime  @default(now())
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+  loja            Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  caixa           Caixa     @relation(fields: [caixaId], references: [id], onDelete: Cascade)
+  itens           ItemVenda[]
+
+  @@unique([lojaId, numeroVenda])
+  @@index([lojaId, dataVenda])
+}
+
+model ItemVenda {
+  id            String   @id @default(cuid())
+  vendaId       String
+  produtoId     String?
+  codigoBarras  String?
+  descricao     String
+  quantidade    Int
+  precoUnitario Float
+  desconto      Float    @default(0)
+  total         Float
+  tipo          String   @default("produto")
+  observacao    String?
+  criadoEm      DateTime @default(now())
+  venda         Venda    @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+  produto       Produto? @relation(fields: [produtoId], references: [id], onDelete: SetNull)
+
+  @@index([vendaId])
+}
+
+model MovimentacaoCaixa {
+  id          String   @id @default(cuid())
+  caixaId     String
+  tipo        String
+  valor       Float
+  descricao   String
+  formaPagamento String?
+  criadoEm    DateTime @default(now())
+  caixa       Caixa    @relation(fields: [caixaId], references: [id], onDelete: Cascade)
+
+  @@index([caixaId])
+}
+
+// ==================== FATURAS - Sistema de Cobrança Asaas ====================
+
+model ConfiguracaoPagamento {
+  id                    String   @id @default(cuid())
+  
+  // Dados Asaas
+  asaasApiKey           String?  // API Key do Asaas
+  asaasAmbiente         String   @default("sandbox") // sandbox ou producao
+  
+  // Dados do recebedor PIX
+  chavePix              String?  // Chave PIX
+  tipoChavePix          String?  // CPF, CNPJ, TELEFONE, EMAIL, ALEATORIA
+  nomeRecebedor         String?  // Nome do recebedor
+  
+  // Configurações de cobrança
+  valorMensalidade      Float    @default(29.90)
+  valorAnuidade         Float    @default(290.00)
+  diaVencimento         Int      @default(10)  // Dia do vencimento
+  diasBloqueio         Int      @default(20) // Dias após vencimento para bloquear
+  diasTolerancia        Int      @default(3)  // Dias de tolerância antes de cobrar juros
+  
+  // Webhook
+  webhookSecret         String?  // Segredo para validar webhook
+  
+  // Controle
+  ativo                 Boolean  @default(false)
+  atualizadoEm          DateTime @updatedAt
+}
+
+model Fatura {
+  id             String    @id @default(cuid())
+  lojaId         String
+  numeroFatura   Int
+  valor          Float
+  status         String    @default("pendente") // pendente, paga, vencida, cancelada
+  formaPagamento String?   // pix, boleto, cartao
+  
+  // Dados Asaas
+  asaasId        String?   // ID da cobrança no Asaas
+  asaasCustomerId String?  // ID do customer no Asaas
+  
+  // PIX
+  codigoPix      String?   // Código PIX copia e cola
+  qrCodePix      String?   // QR Code em base64 ou URL
+  
+  // Boleto
+  linkBoleto     String?   // Link do PDF do boleto
+  codigoBoleto   String?   // Linha digitável
+  
+  // Link de pagamento
+  linkPagamento  String?   // Link de pagamento Asaas
+  
+  // Datas
+  dataVencimento DateTime
+  dataPagamento  DateTime?
+  dataCriacao    DateTime  @default(now())
+  dataLembrete   DateTime? // Data que foi enviado lembrete
+  atualizadoEm   DateTime  @updatedAt
+  
+  // Referência
+  referencia     String?   // Ex: "Janeiro/2024"
+  observacao     String?
+  
+  // Relação
+  loja           Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+
+  @@unique([lojaId, numeroFatura])
+  @@index([lojaId, status])
+  @@index([lojaId, dataVencimento])
+  @@index([status, dataVencimento])
+}

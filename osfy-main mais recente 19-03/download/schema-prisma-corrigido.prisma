@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model SuperAdmin {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Loja {
+  id                 String         @id @default(cuid())
+  nome               String
+  slug               String         @unique
+  responsavel        String
+  telefone           String
+  whatsapp           String
+  email              String         @unique
+  senhaHash          String
+  cidade             String
+  estado             String
+  endereco           String
+  descricao          String?
+  logo               String?
+  horarioAtendimento String?
+  tiposServico       String?
+  status             String         @default("pendente")
+  criadoEm           DateTime       @default(now())
+  atualizadoEm       DateTime       @updatedAt
+  expiraEm           DateTime?
+  clientes           Cliente[]
+  ordens             OrdemServico[]
+  usuarios           Usuario[]
+  categorias         Categoria[]
+  produtos           Produto[]
+  vendas             Venda[]
+  caixas             Caixa[]
+}
+
+model Usuario {
+  id           String         @id @default(cuid())
+  lojaId       String
+  nome         String
+  email        String
+  senhaHash    String
+  tipo         String         @default("tecnico")
+  ativo        Boolean        @default(true)
+  criadoEm     DateTime       @default(now())
+  atualizadoEm DateTime       @updatedAt
+  ordens       OrdemServico[]
+  loja         Loja           @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+
+  @@unique([lojaId, email])
+}
+
+model Cliente {
+  id           String         @id @default(cuid())
+  lojaId       String
+  nome         String
+  telefone     String
+  email        String?
+  criadoEm     DateTime       @default(now())
+  atualizadoEm DateTime       @updatedAt
+  loja         Loja           @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  ordens       OrdemServico[]
+
+  @@unique([lojaId, telefone])
+}
+
+model OrdemServico {
+  id              String        @id @default(cuid())
+  lojaId          String
+  clienteId       String
+  tecnicoId       String?
+  numeroOs        Int
+  equipamento     String
+  marca           String?
+  modelo          String?
+  imeiSerial      String?
+  senhaAparelho   String?
+  problema        String
+  acessorios      String?
+  estadoAparelho  String?
+  diagnostico     String?
+  solucao         String?
+  status          String        @default("recebido")
+  orcamento       Float?
+  aprovado        Boolean?
+  dataAprovacao   DateTime?
+  valorServico    Float?
+  valorPecas      Float?
+  valorTotal      Float?
+  pago            Boolean       @default(false)
+  formaPagamento  String?
+  dataPagamento   DateTime?
+  dataCriacao     DateTime      @default(now())
+  dataPrevisao    DateTime?
+  dataFinalizacao DateTime?
+  atualizadoEm    DateTime      @updatedAt
+  assinatura      Assinatura?
+  fotos           FotoOS[]
+  historico       HistoricoOS[]
+  tecnico         Usuario?      @relation(fields: [tecnicoId], references: [id])
+  cliente         Cliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  loja            Loja          @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+
+  @@unique([lojaId, numeroOs])
+}
+
+model HistoricoOS {
+  id        String       @id @default(cuid())
+  osId      String
+  descricao String
+  status    String?
+  criadoEm  DateTime     @default(now())
+  ordem     OrdemServico @relation(fields: [osId], references: [id], onDelete: Cascade)
+}
+
+model FotoOS {
+  id        String       @id @default(cuid())
+  osId      String
+  arquivo   String
+  descricao String?
+  tipo      String       @default("recebimento")
+  criadoEm  DateTime     @default(now())
+  ordem     OrdemServico @relation(fields: [osId], references: [id], onDelete: Cascade)
+}
+
+model Assinatura {
+  id       String       @id @default(cuid())
+  osId     String       @unique
+  imagem   String
+  nome     String?
+  criadoEm DateTime     @default(now())
+  ordem    OrdemServico @relation(fields: [osId], references: [id], onDelete: Cascade)
+}
+
+model Configuracao {
+  id           String   @id @default(cuid())
+  chave        String   @unique
+  valor        String
+  descricao    String?
+  atualizadoEm DateTime @updatedAt
+}
+
+model ContadorOS {
+  id           String   @id @default(cuid())
+  lojaId       String   @unique
+  ultimoNumero Int      @default(0)
+  atualizadoEm DateTime @updatedAt
+}
+
+// ==================== PDV - Ponto de Venda ====================
+
+model Categoria {
+  id           String    @id @default(cuid())
+  lojaId       String
+  nome         String
+  descricao    String?
+  ativo        Boolean   @default(true)
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+  loja         Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  produtos     Produto[]
+
+  @@unique([lojaId, nome])
+}
+
+model Produto {
+  id              String    @id @default(cuid())
+  lojaId          String
+  categoriaId     String?
+  codigoBarras    String?   @unique
+  codigoInterno   String?
+  nome            String
+  descricao       String?
+  precoCusto      Float?
+  precoVenda      Float
+  estoque         Int       @default(0)
+  estoqueMinimo   Int       @default(0)
+  unidade         String    @default("UN")
+  localizacao     String?
+  ativo           Boolean   @default(true)
+  permiteVendaSemEstoque Boolean @default(true)
+  imagem          String?
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+  loja            Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  categoria       Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  itensVenda      ItemVenda[]
+
+  @@unique([lojaId, codigoInterno])
+  @@index([codigoBarras])
+}
+
+model Caixa {
+  id              String    @id @default(cuid())
+  lojaId          String
+  usuarioAbertura String
+  usuarioFechamento String?
+  saldoInicial    Float
+  saldoFinal      Float?
+  totalVendas     Float     @default(0)
+  totalDinheiro   Float     @default(0)
+  totalPix        Float     @default(0)
+  totalCartaoCredito Float  @default(0)
+  totalCartaoDebito Float  @default(0)
+  totalOutros     Float     @default(0)
+  totalSangrias   Float     @default(0)
+  totalReforcos   Float     @default(0)
+  status          String    @default("aberto") // aberto, fechado
+  observacaoAbertura String?
+  observacaoFechamento String?
+  dataAbertura    DateTime  @default(now())
+  dataFechamento  DateTime?
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+  loja            Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  vendas          Venda[]
+  movimentacoes   MovimentacaoCaixa[]
+
+  @@index([lojaId, status])
+}
+
+model Venda {
+  id              String    @id @default(cuid())
+  lojaId          String
+  caixaId         String
+  numeroVenda     Int
+  clienteNome     String?
+  clienteCpf      String?
+  subtotal        Float
+  desconto        Float     @default(0)
+  total           Float
+  formaPagamento  String    // dinheiro, pix, cartao_credito, cartao_debito, boleto, crediario, misto
+  valorPago       Float?
+  troco           Float?
+  status          String    @default("concluida") // pendente, concluida, cancelada
+  observacao      String?
+  tipo            String    @default("produto") // produto, servico, avulsa
+  dataVenda       DateTime  @default(now())
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+  loja            Loja      @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  caixa           Caixa     @relation(fields: [caixaId], references: [id], onDelete: Cascade)
+  itens           ItemVenda[]
+
+  @@unique([lojaId, numeroVenda])
+  @@index([lojaId, dataVenda])
+}
+
+model ItemVenda {
+  id            String   @id @default(cuid())
+  vendaId       String
+  produtoId     String?
+  codigoBarras  String?
+  descricao     String
+  quantidade    Int
+  precoUnitario Float
+  desconto      Float    @default(0)
+  total         Float
+  tipo          String   @default("produto") // produto, avulso
+  observacao    String?
+  criadoEm      DateTime @default(now())
+  venda         Venda    @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+  produto       Produto? @relation(fields: [produtoId], references: [id], onDelete: SetNull)
+
+  @@index([vendaId])
+}
+
+model MovimentacaoCaixa {
+  id          String   @id @default(cuid())
+  caixaId     String
+  tipo        String   // entrada, saida, sangria, reforco
+  valor       Float
+  descricao   String
+  formaPagamento String?
+  criadoEm    DateTime @default(now())
+  caixa       Caixa    @relation(fields: [caixaId], references: [id], onDelete: Cascade)
+
+  @@index([caixaId])
+}
