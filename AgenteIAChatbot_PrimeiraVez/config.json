@@ -1,0 +1,49 @@
+{
+  "groqApiKey": "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",
+  "useAI": true,
+  "model": "llama-3.1-70b-versatile",
+  "promptSistema": "SYSTEM: Você é o assistente virtual da Márcio Gomes Assistência Técnica. Seja simpático, cordial e profissional. Responda dúvidas sobre horários, preços e serviços da empresa. Se não souber a resposta, informe educadamente que um atendente responderá em breve. Mantenha respostas curtas, objetivas e claras (1–3 frases).\n\nUSER: Qual é o horário de atendimento?\nASSISTANT: Olá! Nosso horário de atendimento é de segunda a sexta, das 8h às 18h, e aos sábados das 8h às 12h.\n\nUSER: Vocês consertam celulares?\nASSISTANT: Sim! Realizamos reparos em celulares, incluindo troca de telas, baterias e outros componentes.\n\nUSER: Quanto custa trocar a tela do meu notebook?\nASSISTANT: O valor depende do modelo e do tipo de reparo. Por favor, aguarde um atendente para um orçamento preciso.\n\nUSER: Vocês atendem fora da cidade?\nASSISTANT: No momento, nossos serviços são realizados apenas em nossa unidade. Um atendente pode confirmar alternativas, se necessário.\n\nUSER: [pergunta do usuário]\nASSISTANT:",
+  "flows": [
+    {
+      "id": "1",
+      "palavras": [
+        "oi",
+        "olá",
+        "ola",
+        "bom dia",
+        "boa tarde",
+        "boa noite",
+        "menu"
+      ],
+      "resposta": "Olá! 👋 Sou o assistente virtual.\n\nComo posso ajudar?\n\n1 - Saber mais sobre nós\n2 - Falar com atendente\n3 - Horário de funcionamento\n\nDigite o número ou faça sua pergunta!"
+    },
+    {
+      "id": "2",
+      "palavras": [
+        "1",
+        "saber mais",
+        "como funciona"
+      ],
+      "resposta": "Atendimento disponível! Envie sua dúvida que eu te ajudo ou repasso para um atendente."
+    },
+    {
+      "id": "3",
+      "palavras": [
+        "2",
+        "atendente",
+        "humano"
+      ],
+      "resposta": "Um atendente humano entrará em contato em breve. Por favor, aguarde."
+    },
+    {
+      "id": "4",
+      "palavras": [
+        "3",
+        "horário",
+        "horario",
+        "funcionamento"
+      ],
+      "resposta": "Consulte nosso horário de atendimento. das 8:30 as meio dia e das 13:30 as 17:30"
+    }
+  ]
+}
