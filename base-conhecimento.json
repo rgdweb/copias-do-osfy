@@ -1,0 +1,192 @@
+{
+  "bot": {
+    "nome": "Assistente Virtual - Márcio Gomes Assistência Técnica",
+    "canal": "WhatsApp",
+    "estilo": "profissional, objetivo, cordial",
+    "regras_gerais": [
+      "Responder sempre de forma clara e direta",
+      "Evitar textos longos demais",
+      "Usar emojis com moderação",
+      "Priorizar conversão em orçamento",
+      "Encaminhar para humano quando necessário",
+      "Nunca inventar valores exatos",
+      "Sempre confirmar entendimento do problema",
+      "Evitar linguagem técnica com cliente leigo",
+      "Manter tom respeitoso e profissional",
+      "Responder rapidamente como atendimento real"
+    ]
+  },
+
+  "empresa": {
+    "nome": "Márcio Gomes Assistência Técnica",
+    "telefone": "49998418446",
+    "whatsapp": "5549998418446",
+    "email": "contatorgdweb@gmail.com",
+    "endereco": "Rua Nereu Ramos, 14 - Apto",
+    "cidade": "Caçador - SC",
+
+    "horarioAtendimento": {
+      "semana": "Segunda a Sexta: 08:30 às 12:00 e 13:30 às 17:30",
+      "sabado": "Sábado: 08:00 às 12:00",
+      "domingo": "Fechado"
+    },
+
+    "servicos": [
+      "Conserto de celulares (tela, bateria, conector)",
+      "Assistência em notebooks (formatação, SSD, upgrade)",
+      "Tablets e iPads",
+      "Videogames (PlayStation, Xbox, Nintendo)",
+      "Recuperação de dados",
+      "Instalação de Windows e programas"
+    ],
+
+    "formasPagamento": [
+      "Dinheiro",
+      "PIX",
+      "Cartão crédito",
+      "Cartão débito",
+      "Parcelamento em até 3x sem juros"
+    ],
+
+    "garantia": "90 dias para peças e serviços"
+  },
+
+  "respostasInteligentes": {
+    "agradecimentos": {
+      "gatilhos": ["obg", "obrigado", "obrigada", "valeu", "vlw", "thanks", "agradeço", "agradeco", "muito obrigado", "muito obrigada", "mt obg", "brigado", "brigada", "blz", "beleza", "de boa", "obrigadoo", "obrigadaa"],
+      "respostas": [
+        "De nada! 😊 Qualquer coisa é só chamar!",
+        "Disponha! Estamos aqui pra ajudar!",
+        "Por nada! Se precisar de mais algo, manda!",
+        "Que isso! Foi um prazer! 👍"
+      ]
+    },
+    "despedidas": {
+      "gatilhos": ["tchau", "ate logo", "ate mais", "até logo", "até mais", "flw", "falou", "falo", "xau", "bye", "tchau tchau", "falou valeu", "to indo", "vou nessa", "se cuida"],
+      "respostas": [
+        "Até logo! Foi um prazer! 👋",
+        "Tchau! Volte sempre! 😊",
+        "Até mais! Qualquer coisa estamos aqui!",
+        "Falou! Tenha um ótimo dia!"
+      ]
+    },
+    "confirmacoes": {
+      "gatilhos": ["ok", "blz", "beleza", "certo", "combinado", "entendi", "saquei", "perfeito", "ótimo", "legal", "show", "top", "joia", "ok obg", "blz obg"],
+      "respostas": [
+        "Perfeito! 👍",
+        "Legal! Qualquer coisa manda!",
+        "Joia! Fico à disposição!",
+        "Combinado! 😊"
+      ]
+    },
+    "saudacoes": {
+      "bomDia": {
+        "gatilhos": ["bom dia", "bomdia", "bom diaa", "muito bom dia"],
+        "respostas": [
+          "Bom dia! ☀️ Seja bem-vindo! Como posso ajudar?",
+          "Bom dia! 😊 O que precisa hoje?",
+          "Bom dia! Tudo bem? Me diga como posso te ajudar!"
+        ]
+      },
+      "boaTarde": {
+        "gatilhos": ["boa tarde", "boatarde", "boa tarde!"],
+        "respostas": [
+          "Boa tarde! 🌤️ Como posso ajudar?",
+          "Boa tarde! 😊 O que você precisa?",
+          "Boa tarde! Seja bem-vindo!"
+        ]
+      },
+      "boaNoite": {
+        "gatilhos": ["boa noite", "boanoite", "boa noite!"],
+        "respostas": [
+          "Boa noite! 🌙 Como posso ajudar?",
+          "Boa noite! 😊 O que você precisa?",
+          "Boa noite! Seja bem-vindo!"
+        ]
+      },
+      "oiOla": {
+        "gatilhos": ["oi", "olá", "ola", "hey", "eai", "e aí", "ei", "oie", "oii", "opa", "salve", "fala"],
+        "respostas": [
+          "Olá! 😊 Seja bem-vindo à assistência! Como posso ajudar?",
+          "Oi! Tudo bem? Digite *menu* ou me diga o que precisa!",
+          "Olá! 👋 Sou o assistente virtual. O que você precisa?"
+        ]
+      }
+    },
+    "tudoBem": {
+      "gatilhos": ["tudo bem", "tudo bom", "como vai", "como está", "como ta", "tá bem", "tudo certo"],
+      "respostas": [
+        "Tudo ótimo! 😊 E com você? Como posso ajudar?",
+        "Estou bem! E aí, o que precisa?",
+        "Tudo certo por aqui! Em que posso ser útil?"
+      ]
+    },
+    "quemSou": {
+      "gatilhos": ["quem é você", "quem e voce", "quem é vc", "é robô", "e robo", "é bot", "você é robô", "com quem falo"],
+      "respostas": [
+        "Sou o assistente virtual! 🤖 Respondo dúvidas sobre serviços, horários, valores. Digite *menu*!",
+        "Sou um robô de atendimento! Estou aqui pra te ajudar. Para falar com humano, digite *atendente*!"
+      ]
+    }
+  },
+
+  "intencaoTecnico": {
+    "descricao": "Encaminhar automaticamente para técnico quando detectar intenção de conserto/orçamento",
+    "gatilhos": [
+      "orçamento", "orcamento", "fazer orçamento", "quero orçamento",
+      "quanto custa", "quanto custa para", "quanto fica", "qual o valor",
+      "quero consertar", "preciso consertar", "consertar",
+      "meu celular quebrou", "minha tela quebrou", "tela quebrada", "tela trincou",
+      "não liga", "nao liga", "parou de funcionar", "estragou",
+      "molhou", "caiu na água", "caiu na agua", "derrubei", "caiu",
+      "bateria viciada", "bateria estragada", "carregando devagar",
+      "quero levar", "quero trazer", "posso levar", "posso trazer",
+      "agendar", "agendamento", "marcar horário", "quando posso ir",
+      "urgente", "urgencia", "o mais rápido", "o mais rapido",
+      "prazo", "quanto tempo demora", "quando fica pronto", "tempo de conserto",
+      "preciso de ajuda", "problema no", "com defeito", "com problema",
+      "trocar tela", "trocar bateria", "trocar conector", "formatar",
+      "quero fazer", "preciso fazer", "tem como fazer"
+    ],
+    "respostaPadrao": "Perfeito! Para te passar valor exato e prazo, vou te encaminhar para o técnico. Aguarde um momento! 🔧\n\n_Digite *menu* se quiser ver outras informações._"
+  },
+
+  "categorias": {
+    "servicos": {
+      "palavrasChave": ["servico", "serviço", "conserta", "consertar", "reparo", "fazem", "trabalham", "arruma", "o que vocês fazem", "o que atendem"],
+      "respostaPadrao": "📱 Nossos serviços:\n\n• Celulares (tela, bateria, conector)\n• Notebooks (formatação, SSD)\n• Tablets e iPads\n• Videogames\n• Recuperação de dados\n• Instalação de Windows\n\n✅ Orçamento GRATUITO!\n✅ Garantia de 90 dias!\n\nPara consertar, digite *atendente*!"
+    },
+    "horarios": {
+      "palavrasChave": ["horario", "horário", "funcionamento", "abre", "fecha", "atendem", "quando", "expediente", "que horas", "estão abertos", "ta aberto"],
+      "respostaPadrao": "🕐 Horário de atendimento:\n\n📅 Segunda a Sexta\n   08:30 às 12:00\n   13:30 às 17:30\n\n📅 Sábado\n   08:00 às 12:00\n\n❌ Domingo: Fechado\n\nEstamos funcionando! 💪"
+    },
+    "valores": {
+      "palavrasChave": ["preco", "preço", "valor", "custa", "cobram", "quanto é", "valores", "preços", "faixa de preço"],
+      "respostaPadrao": "💰 Valores aproximados:\n\n📱 Tela celular: a partir de R$ 150\n🔋 Bateria: a partir de R$ 80\n💻 Formatação: a partir de R$ 80\n\n⚠️ Valor exato só após análise.\n✅ Orçamento GRATUITO!\n\nPara valor exato, digite *atendente*!"
+    },
+    "localizacao": {
+      "palavrasChave": ["endereco", "endereço", "localizacao", "localização", "onde fica", "como chegar", "local", "onde são vocês", "qual o endereço"],
+      "respostaPadrao": "📍 Nossa localização:\n\nRua Nereu Ramos, 14 - Apto\nCaçador - SC\n\n📱 WhatsApp: (49) 99841-8446\n\nPara agendar, digite *atendente*!"
+    },
+    "pagamento": {
+      "palavrasChave": ["pagamento", "pagar", "cartao", "cartão", "pix", "parcela", "dinheiro", "credito", "debito", "aceitam"],
+      "respostaPadrao": "💳 Formas de pagamento:\n\n💵 Dinheiro\n📱 PIX\n💳 Cartão crédito\n💳 Cartão débito\n\n📦 Parcelamento em até 3x sem juros!"
+    },
+    "garantia": {
+      "palavrasChave": ["garantia", "garante", "garantido", "tem garantia", "qual garantia"],
+      "respostaPadrao": "✅ Nossa garantia:\n\n📋 90 dias para peças e serviços\n📝 Emitimos termo de garantia\n\n⚠️ Não cobre: quedas, água, uso indevido"
+    },
+    "celular": {
+      "palavrasChave": ["celular", "smartphone", "iphone", "android", "samsung", "motorola", "xiaomi", "lg", "telefone"],
+      "respostaPadrao": "📱 Serviços para celulares:\n\n• Troca de tela\n• Troca de bateria\n• Conector de carga\n• Câmera\n\n💰 A partir de R$ 150\n⏱️ Prazo: 1-2 horas (agendado)\n\nPara consertar, digite *atendente*!"
+    },
+    "notebook": {
+      "palavrasChave": ["notebook", "laptop", "computador", "pc", "desktop", "macbook"],
+      "respostaPadrao": "💻 Serviços para notebooks/PC:\n\n• Formatação\n• Upgrade SSD\n• Upgrade memória RAM\n• Conserto de placa\n\n💰 Formatação a partir de R$ 80\n⏱️ Prazo: 1-2 dias\n\nPara consertar, digite *atendente*!"
+    }
+  },
+
+  "fallback": {
+    "resposta": "Algumas informações você Pode Tirar Com técnico. 🤔\n\nDigite *menu* para ver as opções ou *atendente* para falar com uma pessoa!"
+  }
+}

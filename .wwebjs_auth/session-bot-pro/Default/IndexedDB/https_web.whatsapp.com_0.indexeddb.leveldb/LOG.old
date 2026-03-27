@@ -1,0 +1,17 @@
+2026/03/27-00:44:38.455 3a40 Reusing MANIFEST C:\Users\Administrador\Downloads\bot-whatsapp-pro-v7.2\.wwebjs_auth\session-bot-pro\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/27-00:44:38.456 3a40 Recovering log #703
+2026/03/27-00:44:38.480 3a40 Reusing old log C:\Users\Administrador\Downloads\bot-whatsapp-pro-v7.2\.wwebjs_auth\session-bot-pro\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000703.log 
+2026/03/27-00:44:39.682 154c Compacting 1@1 + 5@2 files
+2026/03/27-00:44:39.710 154c Generated table #719@1: 22201 keys, 2178359 bytes
+2026/03/27-00:44:39.770 154c Generated table #720@1: 32472 keys, 2256518 bytes
+2026/03/27-00:44:39.820 154c Generated table #721@1: 30077 keys, 2260908 bytes
+2026/03/27-00:44:39.863 154c Generated table #722@1: 34783 keys, 2253288 bytes
+2026/03/27-00:44:39.885 154c Generated table #723@1: 24117 keys, 1002480 bytes
+2026/03/27-00:44:39.885 154c Compacted 1@1 + 5@2 files => 9951553 bytes
+2026/03/27-00:44:39.887 154c compacted to: files[ 0 0 21 0 0 0 0 ]
+2026/03/27-00:44:39.887 154c Delete type=2 #687
+2026/03/27-00:44:39.887 154c Delete type=2 #688
+2026/03/27-00:44:39.887 154c Delete type=2 #689
+2026/03/27-00:44:39.887 154c Delete type=2 #690
+2026/03/27-00:44:39.887 154c Delete type=2 #702
+2026/03/27-00:44:39.887 154c Delete type=2 #706

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bot WhatsApp Pro - Painel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #1e293b; }
+    header h1 { font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+    .badge { background: #3b82f6; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+    
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat { background: #1e293b; padding: 16px; border-radius: 12px; text-align: center; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: #3b82f6; }
+    .stat-label { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    
+    .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    
+    .qr-box { text-align: center; padding: 20px; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .qr-box img { max-width: 220px; border-radius: 12px; }
+    .status { padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; display: inline-block; }
+    .status.connected { background: #166534; }
+    .status.disconnected { background: #854d0e; }
+    
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.85rem; margin-bottom: 4px; color: #94a3b8; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 0.9rem; }
+    .form-group textarea { min-height: 80px; resize: vertical; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-success { background: #22c55e; color: white; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab { padding: 8px 16px; background: #334155; border: none; border-radius: 8px; color: #e2e8f0; cursor: pointer; font-size: 0.85rem; }
+    .tab.active { background: #3b82f6; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #0f172a; border-radius: 8px; margin-bottom: 8px; }
+    .list-item small { color: #64748b; }
+    
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: white; padding: 12px 24px; border-radius: 8px; opacity: 0; transform: translateY(20px); transition: all 0.3s; z-index: 1000; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: #ef4444; }
+    
+    .log-box { background: #0f172a; border-radius: 8px; padding: 12px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; line-height: 1.6; }
+    .log-item { padding: 4px 0; border-bottom: 1px solid #1e293b; }
+    .log-item span { margin-right: 8px; }
+    .log-time { color: #64748b; }
+    .log-info { color: #3b82f6; }
+    .log-warn { color: #f59e0b; }
+    .log-erro { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🤖 Bot WhatsApp Pro <span class="badge">v5.0</span></h1>
+      <div id="statusBadge" class="status disconnected">Aguardando...</div>
+    </header>
+    
+    <div class="stats">
+      <div class="stat"><div class="stat-value" id="statRecebidas">0</div><div class="stat-label">Recebidas</div></div>
+      <div class="stat"><div class="stat-value" id="statEnviadas">0</div><div class="stat-label">Enviadas</div></div>
+      <div class="stat"><div class="stat-value" id="statAtendimentos">0</div><div class="stat-label">Atendimentos</div></div>
+      <div class="stat"><div class="stat-value" id="statPausados">0</div><div class="stat-label">Pausados</div></div>
+      <div class="stat"><div class="stat-value" id="statErros">0</div><div class="stat-label">Erros</div></div>
+    </div>
+    
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h2>📲 WhatsApp</h2>
+          <div class="qr-box" id="qrBox"><p>Carregando...</p></div>
+          <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" id="btnRestart">Reiniciar</button>
+            <button class="btn btn-danger btn-sm" id="btnLimpar">Limpar Sessão</button>
+          </div>
+        </div>
+        
+        <div class="card">
+          <h2>📋 Clientes Pausados</h2>
+          <div id="listaPausados"><p style="color:#64748b; text-align:center;">Nenhum</p></div>
+          <button class="btn btn-sm btn-primary" id="btnAtualizar" style="margin-top:12px;">Atualizar</button>
+        </div>
+        
+        <div class="card">
+          <h2>📄 Logs Recentes</h2>
+          <div class="log-box" id="logBox"><p style="color:#64748b;">Logs aparecerão aqui...</p></div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="tabs">
+          <button class="tab active" data-tab="empresa">Empresa</button>
+          <button class="tab" data-tab="servicos">Serviços</button>
+          <button class="tab" data-tab="horarios">Horários</button>
+          <button class="tab" data-tab="ia">IA</button>
+          <button class="tab" data-tab="extras">Extras</button>
+        </div>
+        
+        <div class="card tab-content active" id="tab-empresa">
+          <h2>🏢 Dados da Empresa</h2>
+          <div class="form-row">
+            <div class="form-group"><label>Nome</label><input id="empNome" placeholder="Nome da empresa"></div>
+            <div class="form-group"><label>Telefone</label><input id="empTel" placeholder="(00) 00000-0000"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>WhatsApp</label><input id="empWpp" placeholder="5500000000000"></div>
+            <div class="form-group"><label>Email</label><input id="empEmail" placeholder="email@exemplo.com"></div>
+          </div>
+          <div class="form-group"><label>Endereço</label><textarea id="empEnd" placeholder="Endereço completo"></textarea></div>
+          <div class="form-group"><label>Cidade</label><input id="empCid" placeholder="Cidade"></div>
+          <div class="form-group"><label>Garantia</label><input id="empGar" placeholder="90 dias para peças e serviços"></div>
+          <button class="btn btn-success" id="btnEmp">Salvar Empresa</button>
+        </div>
+        
+        <div class="card tab-content" id="tab-servicos">
+          <h2>🔧 Serviços</h2>
+          <div class="form-group"><label>Serviços (um por linha)</label><textarea id="servicos" rows="8" placeholder="Conserto de celulares&#10;Formatação de notebooks&#10;..."></textarea></div>
+          <div class="form-group"><label>Formas de Pagamento (uma por linha)</label><textarea id="pagamentos" rows="4" placeholder="Dinheiro&#10;PIX&#10;Cartão"></textarea></div>
+          <button class="btn btn-success" id="btnServ">Salvar</button>
+        </div>
+        
+        <div class="card tab-content" id="tab-horarios">
+          <h2>⏰ Horários</h2>
+          <div class="form-group"><label>Segunda a Sexta</label><input id="horSemana" placeholder="8:30 às 12:00 e 13:30 às 17:30"></div>
+          <div class="form-group"><label>Sábado</label><input id="horSab" placeholder="8:00 às 12:00"></div>
+          <div class="form-group"><label>Domingo</label><input id="horDom" placeholder="Fechado"></div>
+          <div class="form-group"><label>Mensagem fora do horário</label><textarea id="msgFora" placeholder="Estamos fora do horário..."></textarea></div>
+          <button class="btn btn-success" id="btnHor">Salvar</button>
+        </div>
+        
+        <div class="card tab-content" id="tab-ia">
+          <h2>🤖 Configuração IA</h2>
+          <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:12px;">Configure a chave do Groq para respostas inteligentes.</p>
+          <a href="https://console.groq.com/keys" target="_blank" style="display:inline-block; margin-bottom:12px; color:#3b82f6;">🔑 Obter chave gratuita</a>
+          <div class="form-group"><label>Chave API Groq</label><input type="password" id="apiKey" placeholder="gsk_..."></div>
+          <div class="form-group"><label>Modelo</label><select id="modelo">
+            <option value="llama-3.1-8b-instant">Llama 3.1 8B (rápido)</option>
+            <option value="llama-3.1-70b-versatile">Llama 3.1 70B (melhor)</option>
+          </select></div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <input type="checkbox" id="usarIA" checked>
+            <label for="usarIA">Usar IA</label>
+          </div>
+          <button class="btn btn-success" id="btnIA">Salvar Configuração</button>
+        </div>
+        
+        <div class="card tab-content" id="tab-extras">
+          <h2>📝 Informações Extras</h2>
+          <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:12px;">Adicione informações que a IA deve saber.</p>
+          <div class="form-group"><label>Título</label><input id="infoTit" placeholder="Ex: Entrega, Domicílio"></div>
+          <div class="form-group"><label>Descrição</label><textarea id="infoCont" placeholder="Detalhes..."></textarea></div>
+          <button class="btn btn-primary" id="btnAddInfo">Adicionar</button>
+          <div id="listaExtras" style="margin-top:16px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="toast" class="toast"></div>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const socket = io();
+    
+    // Toast
+    function toast(msg, err = false) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (err ? ' error' : '');
+      setTimeout(() => t.className = 'toast', 3000);
+    }
+    
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        $('tab-' + tab.dataset.tab).classList.add('active');
+      };
+    });
+    
+    // Socket
+    socket.on('qr', data => {
+      if (data === 'loading') $('qrBox').innerHTML = '<p>⏳ Gerando QR Code...</p>';
+      else if (data) $('qrBox').innerHTML = `<img src="${data}"><p style="margin-top:12px; color:#94a3b8;">Escaneie com WhatsApp</p>`;
+      else $('qrBox').innerHTML = '<p class="status connected">✅ Conectado!</p>';
+    });
+    
+    socket.on('status', s => {
+      const badge = $('statusBadge');
+      badge.textContent = s.conectado ? 'Conectado' : (s.mensagem || 'Desconectado');
+      badge.className = 'status ' + (s.conectado ? 'connected' : 'disconnected');
+    });
+    
+    socket.on('pausados', lista => {
+      $('statPausados').textContent = lista.length;
+      if (!lista.length) { $('listaPausados').innerHTML = '<p style="color:#64748b; text-align:center;">Nenhum</p>'; return; }
+      $('listaPausados').innerHTML = lista.map(p => `
+        <div class="list-item">
+          <div><strong>${p.telefone.substring(0,20)}...</strong><br><small>${p.desde ? new Date(p.desde).toLocaleString('pt-BR') : ''} - ${p.motivo || 'manual'}</small></div>
+          <button class="btn btn-sm btn-danger" onclick="reativar('${p.telefone}')">Reativar</button>
+        </div>
+      `).join('');
+    });
+    
+    socket.on('stats', s => {
+      $('statRecebidas').textContent = s.mensagensRecebidas || 0;
+      $('statEnviadas').textContent = s.mensagensEnviadas || 0;
+      $('statAtendimentos').textContent = s.atendimentosHoje || 0;
+      $('statErros').textContent = s.erros || 0;
+    });
+    
+    window.reativar = async tel => {
+      await fetch('/api/pausar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefone: tel, pausar: false }) });
+      atualizar();
+      toast('Reativado!');
+    };
+    
+    // Carregar dados
+    async function carregar() {
+      const base = await fetch('/api/base').then(r => r.json());
+      const cfg = await fetch('/api/config/full').then(r => r.json());
+      
+      if (base.empresa) {
+        $('empNome').value = base.empresa.nome || '';
+        $('empTel').value = base.empresa.telefone || '';
+        $('empWpp').value = base.empresa.whatsapp || '';
+        $('empEmail').value = base.empresa.email || '';
+        $('empEnd').value = base.empresa.endereco || '';
+        $('empCid').value = base.empresa.cidade || '';
+        $('empGar').value = base.empresa.garantia || '';
+        $('servicos').value = (base.empresa.servicos || []).join('\n');
+        $('pagamentos').value = (base.empresa.formasPagamento || []).join('\n');
+        if (base.empresa.horarioAtendimento) {
+          $('horSemana').value = base.empresa.horarioAtendimento.semana || '';
+          $('horSab').value = base.empresa.horarioAtendimento.sabado || '';
+          $('horDom').value = base.empresa.horarioAtendimento.domingo || '';
+        }
+      }
+      
+      $('apiKey').value = cfg.groqApiKey || '';
+      $('modelo').value = cfg.model || 'llama-3.1-8b-instant';
+      $('usarIA').checked = cfg.useAI !== false;
+      $('msgFora').value = cfg.mensagemForaHorario || '';
+      
+      renderExtras(base.informacoesAdicionais || []);
+    }
+    
+    function renderExtras(lista) {
+      if (!lista.length) { $('listaExtras').innerHTML = ''; return; }
+      $('listaExtras').innerHTML = '<h3 style="font-size:0.9rem; margin-bottom:8px;">Cadastrados:</h3>' + lista.map((e, i) => `
+        <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+          <strong>${e.titulo}</strong>
+          <p style="font-size:0.85rem; color:#94a3b8;">${e.conteudo}</p>
+        </div>
+      `).join('');
+    }
+    
+    async function atualizar() {
+      const pausados = await fetch('/api/pausados').then(r => r.json());
+      socket.emit('pausados', pausados);
+      $('statPausados').textContent = pausados.length;
+    }
+    
+    // Botões
+    $('btnRestart').onclick = async () => { await fetch('/api/restart', { method: 'POST' }); toast('Reiniciando...'); };
+    $('btnLimpar').onclick = async () => { if (confirm('Limpar sessão?')) { await fetch('/api/restart?limpar=1', { method: 'POST' }); toast('Sessão limpa!'); } };
+    $('btnAtualizar').onclick = atualizar;
+    
+    $('btnEmp').onclick = async () => {
+      await fetch('/api/empresa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        nome: $('empNome').value, telefone: $('empTel').value, whatsapp: $('empWpp').value, email: $('empEmail').value,
+        endereco: $('empEnd').value, cidade: $('empCid').value, garantia: $('empGar').value
+      })});
+      toast('Salvo!');
+    };
+    
+    $('btnServ').onclick = async () => {
+      const base = await fetch('/api/base').then(r => r.json());
+      base.empresa = base.empresa || {};
+      base.empresa.servicos = $('servicos').value.split('\n').filter(v => v.trim());
+      base.empresa.formasPagamento = $('pagamentos').value.split('\n').filter(v => v.trim());
+      await fetch('/api/base', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(base) });
+      toast('Salvo!');
+    };
+    
+    $('btnHor').onclick = async () => {
+      const base = await fetch('/api/base').then(r => r.json());
+      base.empresa = base.empresa || {};
+      base.empresa.horarioAtendimento = { semana: $('horSemana').value, sabado: $('horSab').value, domingo: $('horDom').value };
+      await fetch('/api/base', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(base) });
+      await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mensagemForaHorario: $('msgFora').value }) });
+      toast('Salvo!');
+    };
+    
+    $('btnIA').onclick = async () => {
+      await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        groqApiKey: $('apiKey').value, model: $('modelo').value, useAI: $('usarIA').checked
+      })});
+      toast('Configuração salva!');
+    };
+    
+    $('btnAddInfo').onclick = async () => {
+      const titulo = $('infoTit').value.trim();
+      const conteudo = $('infoCont').value.trim();
+      if (!titulo || !conteudo) { toast('Preencha os campos!', true); return; }
+      await fetch('/api/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titulo, conteudo }) });
+      $('infoTit').value = '';
+      $('infoCont').value = '';
+      const base = await fetch('/api/base').then(r => r.json());
+      renderExtras(base.informacoesAdicionais || []);
+      toast('Adicionado!');
+    };
+    
+    carregar();
+    setInterval(atualizar, 10000);
+  </script>
+</body>
+</html>
