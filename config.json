@@ -1,11 +1,4 @@
 {
-  "groqApiKey": "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",
-  "useAI": true,
-  "model": "llama-3.3-70b-versatile",
-  "numeroAtendente": "5549998418446",
-  "mensagemForaHorario": "Estamos fora do horário de atendimento. Deixe sua mensagem que retornamos em breve!",
-  "horarioAtendimento": {
-    "inicio": 8,
-    "fim": 18
-  }
+  "nome": "FUTURAMA - Sistema de Preços",
+  "versao": "1.0"
 }

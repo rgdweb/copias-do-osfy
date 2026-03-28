@@ -1,0 +1,287 @@
+{
+  "empresa": {
+    "nome": "Futurama Distribuidora de Peças",
+    "telefone": "",
+    "cidade": ""
+  },
+  "telas": [
+    {
+      "id": "1",
+      "modelo": "IPHONE 13 PRO MAX",
+      "tipo": "OLED QUALIDADE ORIGINAL MARCA PSH",
+      "observacao": "CAIXA VERMELHA - PRECISA SOLDAR C.I",
+      "compatibilidade": [],
+      "preco": 375,
+      "estoque": 10,
+      "ativo": true
+    },
+    {
+      "id": "2",
+      "modelo": "IPHONE 13 PRO MAX",
+      "tipo": "QUALIDADE ORIGINAL MARCA PSH SCREEN ASSEMBLY",
+      "observacao": "BOX BLUE",
+      "compatibilidade": [],
+      "preco": 700,
+      "estoque": 5,
+      "ativo": true
+    },
+    {
+      "id": "3",
+      "modelo": "IPHONE 13 PRO MAX",
+      "tipo": "JK COM C.I LCD",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 256,
+      "estoque": 8,
+      "ativo": true
+    },
+    {
+      "id": "4",
+      "modelo": "IPHONE 13 PRO MAX",
+      "tipo": "OLED GX OU DD QUALIDADE PREMIUM",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 380,
+      "estoque": 15,
+      "ativo": true
+    },
+    {
+      "id": "5",
+      "modelo": "MOTO G05",
+      "tipo": "SEM ARO",
+      "observacao": "",
+      "compatibilidade": [
+        "G15",
+        "G35",
+        "E15"
+      ],
+      "preco": 80,
+      "estoque": 20,
+      "ativo": true
+    },
+    {
+      "id": "6",
+      "modelo": "MOTO G15",
+      "tipo": "COM ARO CHINA",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 110,
+      "estoque": 12,
+      "ativo": true
+    },
+    {
+      "id": "7",
+      "modelo": "MOTO G15",
+      "tipo": "COM ARO PREMIUM FUTURE",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 135,
+      "estoque": 8,
+      "ativo": true
+    },
+    {
+      "id": "8",
+      "modelo": "MOTO G13",
+      "tipo": "SEM ARO",
+      "observacao": "",
+      "compatibilidade": [
+        "G23",
+        "G34",
+        "G53"
+      ],
+      "preco": 90,
+      "estoque": 25,
+      "ativo": true
+    },
+    {
+      "id": "9",
+      "modelo": "MOTO G34",
+      "tipo": "5G COM ARO VIVID",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 125,
+      "estoque": 10,
+      "ativo": true
+    },
+    {
+      "id": "10",
+      "modelo": "A22 4G",
+      "tipo": "OLED CHINA",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 210,
+      "estoque": 7,
+      "ativo": true
+    },
+    {
+      "id": "11",
+      "modelo": "A22 4G",
+      "tipo": "OLED COM ARO FUTURE",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 229,
+      "estoque": 5,
+      "ativo": true
+    },
+    {
+      "id": "12",
+      "modelo": "A22 4G",
+      "tipo": "INCELL COM ARO CHINA",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 70,
+      "estoque": 15,
+      "ativo": true
+    },
+    {
+      "id": "13",
+      "modelo": "A22 5G",
+      "tipo": "SEM ARO",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 95,
+      "estoque": 12,
+      "ativo": true
+    },
+    {
+      "id": "14",
+      "modelo": "A22 5G",
+      "tipo": "COM ARO",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 125,
+      "estoque": 8,
+      "ativo": true
+    },
+    {
+      "id": "15",
+      "modelo": "REDMI A3",
+      "tipo": "COM ARO FUTURE PREMIUM",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 115,
+      "estoque": 10,
+      "ativo": true
+    },
+    {
+      "id": "16",
+      "modelo": "REDMI A3",
+      "tipo": "SEM ARO",
+      "observacao": "NOVO A3",
+      "compatibilidade": [],
+      "preco": 95,
+      "estoque": 15,
+      "ativo": true
+    },
+    {
+      "id": "17",
+      "modelo": "REDMI 9A",
+      "tipo": "DISPLAY SEM ARO",
+      "observacao": "",
+      "compatibilidade": [
+        "9C",
+        "9I",
+        "POCO C3"
+      ],
+      "preco": 70,
+      "estoque": 30,
+      "ativo": true
+    },
+    {
+      "id": "18",
+      "modelo": "REDMI 9A",
+      "tipo": "COM ARO CHINA",
+      "observacao": "",
+      "compatibilidade": [
+        "9C",
+        "9I",
+        "POCO C3"
+      ],
+      "preco": 100,
+      "estoque": 20,
+      "ativo": true
+    },
+    {
+      "id": "19",
+      "modelo": "A02S",
+      "tipo": "SEM ARO",
+      "observacao": "",
+      "compatibilidade": [
+        "A03",
+        "A03S",
+        "A04E",
+        "M02S",
+        "M04"
+      ],
+      "preco": 75,
+      "estoque": 25,
+      "ativo": true
+    },
+    {
+      "id": "20",
+      "modelo": "A03",
+      "tipo": "COM ARO ORIGINAL SAMSUNG",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 175,
+      "estoque": 5,
+      "ativo": true
+    },
+    {
+      "id": "21",
+      "modelo": "A03",
+      "tipo": "COM ARO CHINA",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 100,
+      "estoque": 18,
+      "ativo": true
+    },
+    {
+      "id": "22",
+      "modelo": "A23 5G",
+      "tipo": "SEM ARO",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 85,
+      "estoque": 12,
+      "ativo": true
+    },
+    {
+      "id": "23",
+      "modelo": "A23 5G",
+      "tipo": "COM ARO",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 125,
+      "estoque": 8,
+      "ativo": true
+    },
+    {
+      "id": "24",
+      "modelo": "S20",
+      "tipo": "OLED ORIGINAL SAMSUNG",
+      "observacao": "",
+      "compatibilidade": [
+        "S20+",
+        "S20 ULTRA"
+      ],
+      "preco": 450,
+      "estoque": 3,
+      "ativo": true
+    },
+    {
+      "id": "25",
+      "modelo": "S20",
+      "tipo": "OLED CHINA",
+      "observacao": "",
+      "compatibilidade": [],
+      "preco": 280,
+      "estoque": 5,
+      "ativo": true
+    }
+  ],
+  "botAtivo": true,
+  "modoTeste": true,
+  "numerosTeste": []
+}

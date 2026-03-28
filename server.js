@@ -1,13 +1,8 @@
 /**
  * ============================================
- * BOT WHATSAPP PROFISSIONAL v7.2
+ * 📱 SUA LOJA - SISTEMA DE PREÇOS
  * ============================================
- * 
- * CORREÇÕES v7.2:
- * - Modelo Groq FIXO no código (llama-3.3-70b-versatile)
- * - Não depende mais do config.json para modelo
- * - Saudações funcionando
- * - Detecção de atendente ENTRANDO
+ * Inteligente e Resposta Rápida 🚀
  */
 
 const express = require("express");
@@ -17,62 +12,42 @@ const path = require("path");
 const fs = require("fs");
 const QRCode = require("qrcode");
 const { Client, LocalAuth } = require("whatsapp-web.js");
-const OpenAI = require("openAI");
 
 // =====================================
-// CONFIGURAÇÕES GLOBAIS
+// CONFIGURAÇÕES
 // =====================================
 const PORT = 3000;
-const CONFIG_FILE = path.join(__dirname, "config.json");
-const BASE_FILE = path.join(__dirname, "base-conhecimento.json");
+const TELAS_FILE = path.join(__dirname, "telas.json");
 const BACKUP_DIR = path.join(__dirname, "backups");
-const LOGS_DIR = path.join(__dirname, "logs");
 
-// MODELO GROQ - SEMPRE ATUALIZADO (não mexer)
-const MODELO_GROQ = "llama-3.3-70b-versatile";
-
-[BACKUP_DIR, LOGS_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
 // =====================================
 // ESTADO GLOBAL
 // =====================================
-let groqClient = null;
 let whatsappClient = null;
 let whatsappConectado = false;
 let io = null;
-let baseConhecimento = null;
-let config = null;
+let dadosTelas = null;
+let botAtivo = true; // Bot começa ativo
+let modoTeste = false; // Modo teste desativado por padrão
+let numerosTeste = []; // Números autorizados para teste
 
-const clientesPausados = new Map();
-const sessoesAtendimento = new Map();
-const mensagensEnviadasPeloBot = new Map();
-const filaProcessamento = new Map();
-const ultimaInteracao = new Map();
-const atendenteAtivo = new Map();
+const clientesPausados = new Set();
 
 const estatisticas = {
+  consultasHoje: 0,
   mensagensRecebidas: 0,
-  mensagensEnviadas: 0,
-  atendimentosHoje: 0,
-  erros: 0,
-  atendenteIntervencoes: 0,
   inicio: new Date().toISOString()
 };
 
 // =====================================
 // LOGGER
 // =====================================
-function log(nivel, categoria, mensagem, dados = null) {
+function log(nivel, categoria, mensagem) {
   const timestamp = new Date().toISOString();
-  const logLine = `[${timestamp}] [${nivel}] [${categoria}] ${mensagem}${dados ? ' | ' + JSON.stringify(dados) : ''}\n`;
-  
-  const cores = { INFO: '\x1b[36m', WARN: '\x1b[33m', ERRO: '\x1b[31m', DEBUG: '\x1b[90m', SUCESSO: '\x1b[32m' };
-  console.log(`${cores[nivel] || ''}${logLine.trim()}\x1b[0m`);
-  
-  const logFile = path.join(LOGS_DIR, `bot_${new Date().toISOString().split('T')[0]}.log`);
-  fs.appendFileSync(logFile, logLine);
+  const cores = { INFO: '\x1b[36m', WARN: '\x1b[33m', ERRO: '\x1b[31m', SUCESSO: '\x1b[32m' };
+  console.log(`${cores[nivel] || ''}[${timestamp}] [${categoria}] ${mensagem}\x1b[0m`);
 }
 
 // =====================================
@@ -80,285 +55,180 @@ function log(nivel, categoria, mensagem, dados = null) {
 // =====================================
 function criarBackup() {
   try {
-    if (!baseConhecimento) return;
-    const nome = `base_${Date.now()}.json`;
-    fs.writeFileSync(path.join(BACKUP_DIR, nome), JSON.stringify(baseConhecimento, null, 2));
+    if (!dadosTelas) return;
+    const nome = `telas_${Date.now()}.json`;
+    fs.writeFileSync(path.join(BACKUP_DIR, nome), JSON.stringify(dadosTelas, null, 2));
     const backups = fs.readdirSync(BACKUP_DIR).sort().reverse();
     backups.slice(10).forEach(b => fs.unlinkSync(path.join(BACKUP_DIR, b)));
+    log('INFO', 'BACKUP', `Backup criado: ${nome}`);
   } catch (e) {}
 }
 
 // =====================================
 // CARREGAR/SALVAR
 // =====================================
-function carregarConfig() {
+function carregarDados() {
   try {
-    if (fs.existsSync(CONFIG_FILE)) {
-      const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
-      // FORÇA modelo correto - ignora se vier errado no config
-      cfg.model = MODELO_GROQ;
-      return cfg;
-    }
-  } catch (e) {}
-  return {
-    groqApiKey: "",
-    useAI: true,
-    model: MODELO_GROQ,
-    numeroAtendente: "5549998418446",
-    mensagemForaHorario: "Estamos fora do horário. Deixe sua mensagem que retornamos!",
-    horarioAtendimento: { inicio: 8, fim: 18 }
-  };
-}
-
-function salvarConfig(c) {
-  try {
-    // FORÇA modelo correto ao salvar
-    c.model = MODELO_GROQ;
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(c, null, 2));
-    config = c;
-  } catch (e) {}
-}
-
-function carregarBase() {
-  try {
-    if (fs.existsSync(BASE_FILE)) {
-      baseConhecimento = JSON.parse(fs.readFileSync(BASE_FILE, "utf8"));
-      log('INFO', 'BASE', 'Base de conhecimento carregada');
+    if (fs.existsSync(TELAS_FILE)) {
+      dadosTelas = JSON.parse(fs.readFileSync(TELAS_FILE, "utf8"));
+      // Carregar estado do bot
+      if (dadosTelas.botAtivo !== undefined) botAtivo = dadosTelas.botAtivo;
+      // Carregar modo teste
+      if (dadosTelas.modoTeste !== undefined) modoTeste = dadosTelas.modoTeste;
+      // Carregar números de teste
+      if (dadosTelas.numerosTeste) numerosTeste = dadosTelas.numerosTeste;
+      log('SUCESSO', 'DADOS', `${dadosTelas.telas?.length || 0} telas carregadas | Modo Teste: ${modoTeste ? 'ON' : 'OFF'}`);
       return true;
     }
   } catch (e) {
-    log('ERRO', 'BASE', 'Erro ao carregar base: ' + e.message);
+    log('ERRO', 'DADOS', 'Erro ao carregar: ' + e.message);
   }
+  dadosTelas = { empresa: {}, telas: [] };
   return false;
 }
 
-function salvarBase(b) {
+function salvarDados() {
   try {
-    fs.writeFileSync(BASE_FILE, JSON.stringify(b, null, 2));
-    baseConhecimento = b;
+    dadosTelas.botAtivo = botAtivo;
+    dadosTelas.modoTeste = modoTeste;
+    dadosTelas.numerosTeste = numerosTeste;
+    fs.writeFileSync(TELAS_FILE, JSON.stringify(dadosTelas, null, 2));
     criarBackup();
-  } catch (e) {}
+  } catch (e) {
+    log('ERRO', 'DADOS', 'Erro ao salvar: ' + e.message);
+  }
 }
 
-// Inicialização
-config = carregarConfig();
-carregarBase();
-
-if (config.groqApiKey?.trim()) {
-  groqClient = new OpenAI({ apiKey: config.groqApiKey, baseURL: "https://api.groq.com/openai/v1" });
-  log('INFO', 'IA', 'Cliente Groq inicializado com modelo: ' + (config.model || 'llama-3.3-70b-versatile'));
-}
+carregarDados();
 
 // =====================================
 // UTILITÁRIOS
 // =====================================
-function gerarProtocolo() {
-  return Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
-}
-
 function normalizar(texto) {
-  return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (!texto) return "";
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function delay(ms) {
-  return new Promise(r => setTimeout(r, ms));
+// =====================================
+// BUSCAR NO BANCO PELO TEXTO DA MENSAGEM
+// =====================================
+function buscarNoBanco(texto) {
+  if (!dadosTelas?.telas) return { disponiveis: [], indisponiveis: [] };
+  
+  const t = normalizar(texto);
+  const matchExato = [];
+  const matchParcial = [];
+  const matchCompatibilidade = [];
+  const indisponiveis = [];
+  
+  const codigosTexto = t.match(/\b[a-z]\d{2,3}[a-z]*\b/gi) || [];
+  
+  dadosTelas.telas.forEach(tela => {
+    const modeloNorm = normalizar(tela.modelo);
+    const todosCodigos = modeloNorm.match(/[a-z]?\d{2,3}[a-z]*\b/gi) || [];
+    const codigoModelo = todosCodigos.length > 0 ? todosCodigos[todosCodigos.length - 1] : modeloNorm;
+    
+    let tipoMatch = null;
+    
+    if (t.includes(modeloNorm)) {
+      tipoMatch = 'exato';
+    }
+    
+    if (!tipoMatch && codigoModelo && codigoModelo.length >= 2) {
+      if (codigosTexto.includes(codigoModelo) || t.includes(codigoModelo)) {
+        tipoMatch = 'parcial';
+      }
+    }
+    
+    if (!tipoMatch && tela.compatibilidade) {
+      for (const comp of tela.compatibilidade) {
+        if (t.includes(normalizar(comp))) {
+          tipoMatch = 'compatibilidade';
+          break;
+        }
+      }
+    }
+    
+    if (tipoMatch) {
+      if (tela.ativo && tela.estoque > 0) {
+        if (tipoMatch === 'exato') matchExato.push(tela);
+        else if (tipoMatch === 'parcial') matchParcial.push(tela);
+        else matchCompatibilidade.push(tela);
+      } else {
+        indisponiveis.push(tela);
+      }
+    }
+  });
+  
+  const idsUnicos = new Set();
+  const removerDuplicados = arr => arr.filter(tela => !idsUnicos.has(tela.id) && idsUnicos.add(tela.id));
+  
+  return { 
+    disponiveis: [
+      ...removerDuplicados(matchExato),
+      ...removerDuplicados(matchParcial),
+      ...removerDuplicados(matchCompatibilidade)
+    ], 
+    indisponiveis: removerDuplicados(indisponiveis)
+  };
 }
 
+// =====================================
+// VERIFICAR NÚMERO DE TESTE
+// =====================================
+function ehNumeroTeste(from) {
+  if (!modoTeste) return false;
+  if (numerosTeste.length === 0) return false;
+  return numerosTeste.includes(from);
+}
+
+// =====================================
+// HORÁRIO DE ATENDIMENTO
+// =====================================
 function horarioAtendimento() {
   const agora = new Date();
   const hora = agora.getHours();
+  const minuto = agora.getMinutes();
   const dia = agora.getDay();
   
+  const horaAtual = hora + minuto / 60;
+  
+  // Segunda a sexta (1-5): 09:00 às 12:00 e 13:30 às 18:30
   if (dia >= 1 && dia <= 5) {
-    const inicio = config.horarioAtendimento?.inicio || 8;
-    const fim = config.horarioAtendimento?.fim || 18;
-    return hora >= inicio && hora < fim;
+    if ((horaAtual >= 9 && horaAtual < 12) || (horaAtual >= 13.5 && horaAtual < 18.5)) {
+      return true;
+    }
   }
-  if (dia === 6) return hora >= 8 && hora < 12;
+  
+  // Sábado (6): 09:00 às 13:00
+  if (dia === 6) {
+    if (horaAtual >= 9 && horaAtual < 13) {
+      return true;
+    }
+  }
+  
   return false;
 }
 
-function getPeriodoDia() {
-  const hora = new Date().getHours();
-  if (hora >= 5 && hora < 12) return 'manha';
-  if (hora >= 12 && hora < 18) return 'tarde';
-  return 'noite';
-}
+function getMensagemForaHorario() {
+  const emp = dadosTelas.empresa?.nome || "SUA LOJA";
+  return `👋 Olá! Seja bem-vindo(a) à ${emp} 📱🔧
 
-function respostaAleatoria(lista) {
-  if (!lista || lista.length === 0) return null;
-  return lista[Math.floor(Math.random() * lista.length)];
-}
+No momento estamos fechados/indisponíveis ⏰
 
-// =====================================
-// DETECÇÃO DE INTENÇÕES
-// =====================================
+🕘 Nosso horário de atendimento:
+📅 Segunda a sexta: 09:00 às 12:00 e 13:30 às 18:30
+📅 Sábados: 09:00 às 13:00
 
-function detectarSaudacao(texto) {
-  const t = normalizar(texto);
-  const saudacoes = baseConhecimento?.respostasInteligentes?.saudacoes;
-  if (!saudacoes) return null;
-  
-  const periodo = getPeriodoDia();
-  
-  // Bom dia
-  if (saudacoes.bomDia?.gatilhos?.some(g => t.includes(normalizar(g)))) {
-    if (periodo === 'manha') return respostaAleatoria(saudacoes.bomDia.respostas);
-    if (periodo === 'tarde') return respostaAleatoria(saudacoes.boaTarde?.respostas);
-    return respostaAleatoria(saudacoes.boaNoite?.respostas);
-  }
-  
-  // Boa tarde
-  if (saudacoes.boaTarde?.gatilhos?.some(g => t.includes(normalizar(g)))) {
-    if (periodo === 'tarde') return respostaAleatoria(saudacoes.boaTarde.respostas);
-    if (periodo === 'manha') return respostaAleatoria(saudacoes.bomDia?.respostas);
-    return respostaAleatoria(saudacoes.boaNoite?.respostas);
-  }
-  
-  // Boa noite
-  if (saudacoes.boaNoite?.gatilhos?.some(g => t.includes(normalizar(g)))) {
-    if (periodo === 'noite') return respostaAleatoria(saudacoes.boaNoite.respostas);
-    if (periodo === 'manha') return respostaAleatoria(saudacoes.bomDia?.respostas);
-    return respostaAleatoria(saudacoes.boaTarde?.respostas);
-  }
-  
-  // Oi/Olá
-  if (saudacoes.oiOla?.gatilhos?.some(g => t.includes(normalizar(g)))) {
-    return respostaAleatoria(saudacoes.oiOla.respostas);
-  }
-  
-  return null;
-}
+💬 Assim que retornarmos ao nosso horário de atendimento, responderemos todas as mensagens com atenção 😊
 
-function detectarAgradecimento(texto) {
-  const t = normalizar(texto);
-  const agradecimentos = baseConhecimento?.respostasInteligentes?.agradecimentos;
-  if (!agradecimentos?.gatilhos) return null;
-  
-  if (agradecimentos.gatilhos.some(g => t.includes(normalizar(g)))) {
-    return respostaAleatoria(agradecimentos.respostas);
-  }
-  return null;
-}
-
-function detectarDespedida(texto) {
-  const t = normalizar(texto);
-  const despedidas = baseConhecimento?.respostasInteligentes?.despedidas;
-  if (!despedidas?.gatilhos) return null;
-  
-  if (despedidas.gatilhos.some(g => t.includes(normalizar(g)))) {
-    return respostaAleatoria(despedidas.respostas);
-  }
-  return null;
-}
-
-function detectarConfirmacao(texto) {
-  const t = normalizar(texto);
-  const confirmacoes = baseConhecimento?.respostasInteligentes?.confirmacoes;
-  if (!confirmacoes?.gatilhos) return null;
-  
-  if (confirmacoes.gatilhos.some(g => t.includes(normalizar(g)))) {
-    return respostaAleatoria(confirmacoes.respostas);
-  }
-  return null;
-}
-
-function detectarTudoBem(texto) {
-  const t = normalizar(texto);
-  const tudoBem = baseConhecimento?.respostasInteligentes?.tudoBem;
-  if (!tudoBem?.gatilhos) return null;
-  
-  if (tudoBem.gatilhos.some(g => t.includes(normalizar(g)))) {
-    return respostaAleatoria(tudoBem.respostas);
-  }
-  return null;
-}
-
-function detectarQuemSou(texto) {
-  const t = normalizar(texto);
-  const quemSou = baseConhecimento?.respostasInteligentes?.quemSou;
-  if (!quemSou?.gatilhos) return null;
-  
-  if (quemSou.gatilhos.some(g => t.includes(normalizar(g)))) {
-    return respostaAleatoria(quemSou.respostas);
-  }
-  return null;
-}
-
-function detectarIntencaoTecnico(texto) {
-  const t = normalizar(texto);
-  const intencao = baseConhecimento?.intencaoTecnico;
-  if (!intencao?.gatilhos) return null;
-  
-  for (const gatilho of intencao.gatilhos) {
-    if (t.includes(normalizar(gatilho))) {
-      return intencao.respostaPadrao;
-    }
-  }
-  return null;
-}
-
-function buscarNaBase(texto) {
-  if (!baseConhecimento?.categorias) return null;
-  
-  const t = normalizar(texto);
-  
-  for (const [id, cat] of Object.entries(baseConhecimento.categorias)) {
-    for (const p of (cat.palavrasChave || [])) {
-      if (t.includes(normalizar(p))) {
-        return cat.respostaPadrao;
-      }
-    }
-  }
-  
-  return null;
-}
-
-// =====================================
-// IA
-// =====================================
-async function respostaIA(texto, telefone) {
-  if (!groqClient || !config.groqApiKey) return null;
-  
-  try {
-    const emp = baseConhecimento?.empresa || {};
-    
-    const prompt = `Você é um ATENDENTE VIRTUAL de uma assistência técnica de celulares e notebooks.
-
-REGRAS:
-1. Seja simpático e profissional
-2. Use emojis com moderação (1-2 por msg)
-3. Respostas curtas (máx 4 frases)
-4. Se não souber, diga para digitar *menu* ou *atendente*
-5. NUNCA invente valores exatos
-6. Para conserto/orçamento, encaminhe para atendente
-
-DADOS DA EMPRESA:
-Nome: ${emp.nome || "Assistência Técnica"}
-Endereço: ${emp.endereco || ""}, ${emp.cidade || ""}
-WhatsApp: ${emp.telefone || ""}
-Horário: ${emp.horarioAtendimento?.semana || ""}
-Serviços: ${(emp.servicos || []).join(", ")}
-Garantia: ${emp.garantia || "90 dias"}
-Pagamento: ${(emp.formasPagamento || []).join(", ")}
-
-PERGUNTA: ${texto}
-
-RESPOSTA:`;
-
-    const comp = await groqClient.chat.completions.create({
-      model: MODELO_GROQ,
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 200,
-      temperature: 0.3,
-    });
-    
-    return comp.choices?.[0]?.message?.content?.trim() || null;
-  } catch (e) {
-    log('ERRO', 'IA', e.message);
-    estatisticas.erros++;
-    return null;
-  }
+🙏 Agradecemos o contato e a preferência!`;
 }
 
 // =====================================
@@ -371,54 +241,176 @@ io = new Server(server);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/api/config", (req, res) => {
-  const s = { ...config };
-  if (s.groqApiKey) s.groqApiKey = s.groqApiKey.substring(0, 8) + "***";
-  res.json(s);
-});
-
-app.get("/api/config/full", (req, res) => res.json(config));
-
-app.post("/api/config", (req, res) => {
-  salvarConfig({ ...config, ...req.body });
-  if (config.groqApiKey?.trim()) {
-    groqClient = new OpenAI({ apiKey: config.groqApiKey, baseURL: "https://api.groq.com/openai/v1" });
-  }
-  res.json({ ok: true });
-});
-
-app.get("/api/base", (req, res) => res.json(baseConhecimento || {}));
-
-app.post("/api/base", (req, res) => {
-  salvarBase(req.body);
-  res.json({ ok: true });
-});
+// API - Dados da empresa
+app.get("/api/empresa", (req, res) => res.json(dadosTelas.empresa || {}));
 
 app.post("/api/empresa", (req, res) => {
-  if (!baseConhecimento) baseConhecimento = {};
-  baseConhecimento.empresa = { ...baseConhecimento.empresa, ...req.body };
-  salvarBase(baseConhecimento);
+  dadosTelas.empresa = { ...dadosTelas.empresa, ...req.body };
+  salvarDados();
+  io.emit("dados_atualizados", { ...dadosTelas, botAtivo });
   res.json({ ok: true });
 });
 
-app.get("/api/pausados", (req, res) => {
-  const l = [];
-  clientesPausados.forEach((v, k) => l.push({ telefone: k, ...v }));
-  res.json(l);
+// API - Toggle Bot (Ativar/Desativar)
+app.post("/api/bot/toggle", (req, res) => {
+  botAtivo = !botAtivo;
+  salvarDados();
+  io.emit("bot_status", botAtivo);
+  io.emit("dados_atualizados", { ...dadosTelas, botAtivo });
+  log('INFO', 'BOT', botAtivo ? 'Bot ATIVADO (Online)' : 'Bot DESATIVADO (Offline)');
+  res.json({ ativo: botAtivo });
 });
 
-app.post("/api/pausar", (req, res) => {
-  const { telefone, pausar } = req.body;
-  if (!telefone) return res.status(400).json({ erro: "Telefone obrigatório" });
-  if (pausar) clientesPausados.set(telefone, { pausado: true, desde: new Date().toISOString() });
-  else clientesPausados.delete(telefone);
+// API - Status do Bot
+app.get("/api/bot/status", (req, res) => {
+  res.json({ ativo: botAtivo, modoTeste, numerosTeste });
+});
+
+// API - Toggle Modo Teste
+app.post("/api/teste/toggle", (req, res) => {
+  modoTeste = !modoTeste;
+  salvarDados();
+  io.emit("modo_teste_status", { modoTeste, numerosTeste });
+  log('INFO', 'TESTE', modoTeste ? 'Modo Teste ATIVADO' : 'Modo Teste DESATIVADO');
+  res.json({ modoTeste, numerosTeste });
+});
+
+// API - Adicionar número de teste
+app.post("/api/teste/numero", (req, res) => {
+  const numero = req.body.numero?.trim();
+  if (!numero) return res.status(400).json({ erro: "Número obrigatório" });
+  
+  // Formatar número (adicionar @c.us se não tiver)
+  const numeroFormatado = numero.includes('@') ? numero : numero + '@c.us';
+  
+  if (!numerosTeste.includes(numeroFormatado)) {
+    numerosTeste.push(numeroFormatado);
+    salvarDados();
+    io.emit("modo_teste_status", { modoTeste, numerosTeste });
+    log('INFO', 'TESTE', `Número adicionado: ${numero}`);
+  }
+  
+  res.json({ modoTeste, numerosTeste });
+});
+
+// API - Remover número de teste
+app.delete("/api/teste/numero/:numero", (req, res) => {
+  const numero = req.params.numero;
+  numerosTeste = numerosTeste.filter(n => n !== numero);
+  salvarDados();
+  io.emit("modo_teste_status", { modoTeste, numerosTeste });
+  log('INFO', 'TESTE', `Número removido: ${numero}`);
+  res.json({ modoTeste, numerosTeste });
+});
+
+// API - Listar números de teste
+app.get("/api/teste/numeros", (req, res) => {
+  res.json({ modoTeste, numerosTeste });
+});
+
+// API - Listar telas
+app.get("/api/telas", (req, res) => {
+  const telas = dadosTelas.telas || [];
+  const { busca, ativo } = req.query;
+  
+  let resultado = telas;
+  
+  if (busca) {
+    const buscaNorm = normalizar(busca);
+    resultado = resultado.filter(t => 
+      normalizar(t.modelo).includes(buscaNorm) ||
+      normalizar(t.tipo).includes(buscaNorm)
+    );
+  }
+  
+  if (ativo !== undefined) {
+    resultado = resultado.filter(t => t.ativo === (ativo === 'true'));
+  }
+  
+  res.json(resultado);
+});
+
+// API - Adicionar tela
+app.post("/api/telas", (req, res) => {
+  const nova = {
+    id: Date.now().toString(),
+    modelo: req.body.modelo || "",
+    tipo: req.body.tipo || "",
+    observacao: req.body.observacao || "",
+    compatibilidade: req.body.compatibilidade || [],
+    preco: parseFloat(req.body.preco) || 0,
+    estoque: parseInt(req.body.estoque) || 0,
+    ativo: req.body.ativo !== false
+  };
+  
+  dadosTelas.telas.push(nova);
+  salvarDados();
+  
+  io.emit("tela_adicionada", nova);
+  io.emit("stats", { total: dadosTelas.telas.length, ativos: dadosTelas.telas.filter(t => t.ativo).length });
+  
+  res.json(nova);
+});
+
+// API - Atualizar tela
+app.put("/api/telas/:id", (req, res) => {
+  const idx = dadosTelas.telas.findIndex(t => t.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ erro: "Tela não encontrada" });
+  
+  dadosTelas.telas[idx] = {
+    ...dadosTelas.telas[idx],
+    ...req.body,
+    id: req.params.id
+  };
+  
+  salvarDados();
+  io.emit("tela_atualizada", dadosTelas.telas[idx]);
+  
+  res.json(dadosTelas.telas[idx]);
+});
+
+// API - Deletar tela
+app.delete("/api/telas/:id", (req, res) => {
+  const idx = dadosTelas.telas.findIndex(t => t.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ erro: "Tela não encontrada" });
+  
+  dadosTelas.telas.splice(idx, 1);
+  salvarDados();
+  
+  io.emit("tela_removida", req.params.id);
+  
   res.json({ ok: true });
 });
 
+// API - Toggle ativo
+app.post("/api/telas/:id/toggle", (req, res) => {
+  const tela = dadosTelas.telas.find(t => t.id === req.params.id);
+  if (!tela) return res.status(404).json({ erro: "Tela não encontrada" });
+  
+  tela.ativo = !tela.ativo;
+  salvarDados();
+  
+  io.emit("tela_atualizada", tela);
+  
+  res.json(tela);
+});
+
+// API - Estatísticas
 app.get("/api/stats", (req, res) => {
-  res.json({ ...estatisticas, conectado: whatsappConectado, pausados: clientesPausados.size });
+  const telas = dadosTelas.telas || [];
+  res.json({
+    total: telas.length,
+    ativos: telas.filter(t => t.ativo).length,
+    inativos: telas.filter(t => !t.ativo).length,
+    semEstoque: telas.filter(t => t.estoque === 0).length,
+    consultasHoje: estatisticas.consultasHoje,
+    mensagensRecebidas: estatisticas.mensagensRecebidas,
+    conectado: whatsappConectado,
+    botAtivo: botAtivo
+  });
 });
 
+// WhatsApp - Desconectar
 app.post("/api/disconnect", async (req, res) => {
   if (whatsappClient) {
     whatsappConectado = false;
@@ -428,98 +420,17 @@ app.post("/api/disconnect", async (req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/api/restart", async (req, res) => {
-  if (whatsappClient) {
-    try { await whatsappClient.destroy(); } catch (e) {}
-    whatsappClient = null;
-  }
-  whatsappConectado = false;
-  if (req.query.limpar === "1") {
-    const auth = path.join(__dirname, ".wwebjs_auth");
-    if (fs.existsSync(auth)) fs.rmSync(auth, { recursive: true });
-  }
-  io.emit("qr", "loading");
-  initWhatsApp(true);
-  res.json({ ok: true });
-});
-
+// Rota principal
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
 // =====================================
-// MENU
+// WHATSAPP BOT
 // =====================================
-function getMenu(protocolo) {
-  const emp = baseConhecimento?.empresa?.nome || "nossa assistência";
-  return `Olá! Bem-vindo(a) à *${emp}*! 😊
-
-📋 Protocolo: ${protocolo}
-
-*Escolha uma opção:*
-
-1️⃣ Serviços
-2️⃣ Horários
-3️⃣ Valores
-4️⃣ Localização
-5️⃣ Pagamento
-6️⃣ Garantia
-7️⃣ Falar com Atendente
-
-Ou digite sua pergunta!`;
-}
-
-// =====================================
-// PAUSAR BOT
-// =====================================
-async function pausarBotParaAtendente(telefone, motivo = "atendente_entrou") {
-  if (clientesPausados.has(telefone)) return;
-  
-  clientesPausados.set(telefone, { pausado: true, motivo, desde: new Date().toISOString() });
-  atendenteAtivo.set(telefone, Date.now());
-  estatisticas.atendenteIntervencoes++;
-  
-  log('SUCESSO', 'ATENDENTE', `🛑 Atendente ENTROU - Bot pausado: ${telefone.substring(0, 20)}`);
-  
-  io.emit("atendente_entrou", { telefone, timestamp: new Date().toISOString() });
-  
-  const pausados = [];
-  clientesPausados.forEach((v, k) => pausados.push({ telefone: k, ...v }));
-  io.emit("pausados", pausados);
-}
-
-// =====================================
-// ENVIAR MENSAGEM
-// =====================================
-async function enviarMsg(telefone, mensagem) {
-  try {
-    mensagensEnviadasPeloBot.set(telefone, Date.now());
-    await whatsappClient.sendMessage(telefone, mensagem);
-    estatisticas.mensagensEnviadas++;
-    log('DEBUG', 'ENVIO', `Enviado para ${telefone.substring(0, 20)}`);
-  } catch (e) {
-    log('ERRO', 'ENVIO', e.message);
-    estatisticas.erros++;
-  }
-}
-
-// =====================================
-// ENCAMINHAR ATENDENTE
-// =====================================
-async function encaminharAtendente(from, motivo = "transferencia") {
-  clientesPausados.set(from, { pausado: true, motivo, desde: new Date().toISOString() });
-  const sessao = sessoesAtendimento.get(from);
-  await enviarMsg(from, `Transferindo para atendente! 👨‍🔧\n\n📋 Protocolo: ${sessao?.protocolo || gerarProtocolo()}\n\nAguarde um momento.\n\n_Digite "bot" para voltar._`);
-  log('INFO', 'TRANSFER', `Encaminhado: ${from}`);
-}
-
-// =====================================
-// WHATSAPP
-// =====================================
-function initWhatsApp(force = false) {
-  if (whatsappClient && !force) return;
-  if (whatsappClient && force) whatsappClient = null;
+function initWhatsApp() {
+  if (whatsappClient) return;
 
   whatsappClient = new Client({
-    authStrategy: new LocalAuth({ clientId: "bot-pro" }),
+    authStrategy: new LocalAuth({ clientId: "telas-bot" }),
     authTimeoutMs: 180000,
     puppeteer: {
       headless: true,
@@ -540,7 +451,7 @@ function initWhatsApp(force = false) {
     whatsappConectado = true;
     io.emit("qr", null);
     io.emit("status", { conectado: true, mensagem: "Conectado!" });
-    log('INFO', 'WPP', 'WhatsApp conectado!');
+    log('SUCESSO', 'WPP', 'WhatsApp conectado!');
   });
 
   whatsappClient.on("disconnected", () => {
@@ -549,271 +460,284 @@ function initWhatsApp(force = false) {
     log('WARN', 'WPP', 'Desconectado');
   });
 
-  // Detectar quando atendente LÊ
-  whatsappClient.on("message_ack", async (msg, ack) => {
-    if (ack !== 3 || !msg.fromMe) return;
-    const telefone = msg.to;
-    if (telefone.includes("@g.us") || telefone.includes("broadcast")) return;
+  whatsappClient.on("message", async (msg) => {
+    const from = msg.from || "";
     
-    const ult = mensagensEnviadasPeloBot.get(telefone) || 0;
-    if (Date.now() - ult < 3000) return;
+    if (from.includes("status") || from.includes("broadcast") || from.includes("@g.us")) return;
     
-    log('INFO', 'ACK', `📖 Atendente LEU: ${telefone.substring(0, 15)}`);
-    await pausarBotParaAtendente(telefone, "atendente_leu");
-  });
+    try {
+      const chat = await msg.getChat();
+      if (chat.isGroup) return;
+    } catch (e) { return; }
+    
+    if (msg.timestamp && (Date.now() / 1000 - msg.timestamp) > 300) return;
 
-  // Detectar quando atendente ENVIA
-  whatsappClient.on("message_create", async (msg) => {
-    if (!msg.fromMe) return;
-    const tel = msg.to;
-    if (tel.includes("@g.us") || tel.includes("broadcast")) return;
-    
-    const txt = (msg.body || "").trim().toLowerCase();
-    
-    if (txt === "!on") {
-      clientesPausados.delete(tel);
-      atendenteAtivo.delete(tel);
-      await whatsappClient.sendMessage(tel, "✅ Bot reativado.");
-      return;
-    }
-    if (txt === "!off") {
-      clientesPausados.set(tel, { pausado: true, motivo: "comando" });
-      await whatsappClient.sendMessage(tel, "⏸️ Bot pausado.");
-      return;
-    }
-    if (txt === "!status") {
-      await whatsappClient.sendMessage(tel, clientesPausados.has(tel) ? "⏸️ PAUSADO" : "✅ ATIVO");
-      return;
-    }
-    
-    const ult = mensagensEnviadasPeloBot.get(tel) || 0;
-    if (Date.now() - ult < 3000) return;
-    
-    await pausarBotParaAtendente(tel, "atendente_enviou");
-  });
+    const texto = msg.body?.trim() || "";
+    if (!texto || texto.length > 500) return;
 
-  whatsappClient.on("message", handleMensagem);
+    estatisticas.mensagensRecebidas++;
+
+    await processarMensagem(msg, from, texto);
+  });
 
   whatsappClient.initialize().catch(err => {
     log('ERRO', 'WPP', 'Falha: ' + err.message);
-    estatisticas.erros++;
   });
 }
 
 // =====================================
 // PROCESSAR MENSAGEM
 // =====================================
-async function handleMensagem(msg) {
-  const from = msg.from || "";
-  
-  if (from.includes("status") || from.includes("broadcast") || from.includes("@g.us")) return;
-  
-  try {
-    const chat = await msg.getChat();
-    if (chat.isGroup) return;
-  } catch (e) { return; }
-  
-  if (msg.timestamp && (Date.now() / 1000 - msg.timestamp) > 300) return;
-
-  const texto = msg.body?.trim() || "";
-  if (!texto || texto.length > 1000) return;
-
-  if (filaProcessamento.has(from)) return;
-  filaProcessamento.set(from, true);
-
-  estatisticas.mensagensRecebidas++;
-
-  try {
-    await processarMensagem(msg, from, texto);
-  } catch (e) {
-    log('ERRO', 'PROC', e.message);
-    estatisticas.erros++;
-  } finally {
-    filaProcessamento.delete(from);
-  }
-}
-
-// =====================================
-// LÓGICA PRINCIPAL
-// =====================================
 async function processarMensagem(msg, from, texto) {
-  const textoLower = texto.toLowerCase();
-
-  // Verificar pausa
+  const t = normalizar(texto);
+  
+  // Verificar se é número de teste
+  const ehTeste = ehNumeroTeste(from);
+  if (ehTeste) {
+    log('INFO', 'TESTE', `Mensagem de número de teste: ${from.substring(0, 20)}...`);
+  }
+  
+  // Verificar se está pausado (atendente)
   if (clientesPausados.has(from)) {
-    if (textoLower === "bot" || textoLower === "menu" || textoLower === "atendente") {
+    if (t === 'bot') {
       clientesPausados.delete(from);
-      atendenteAtivo.delete(from);
-      log('INFO', 'REATIVAR', `Reativado: ${from.substring(0, 15)}`);
-    } else {
+      await msg.reply('🤖 Bot reativado!');
       return;
     }
-  }
-
-  ultimaInteracao.set(from, Date.now());
-
-  // Typing
-  try {
-    const chat = await msg.getChat();
-    await delay(300);
-    await chat.sendStateTyping();
-    await delay(500);
-  } catch (e) {}
-
-  // 1. INTENÇÃO TÉCNICA → Atendente
-  const intencaoTec = detectarIntencaoTecnico(texto);
-  if (intencaoTec) {
-    log('INFO', 'INTENCAO', `Intenção técnica: ${from.substring(0, 15)}`);
-    await encaminharAtendente(from, "intencao_tecnica");
     return;
   }
-
-  // 2. PEDIDO DE ATENDENTE
-  if (textoLower.includes("atendente") || textoLower.includes("humano") || textoLower.includes("falar com") || textoLower.includes("pessoa")) {
-    await encaminharAtendente(from, "cliente_solicitou");
-    return;
-  }
-
-  // 3. SAUDAÇÕES (bom dia, boa tarde, oi, olá)
-  const saudacao = detectarSaudacao(texto);
-  if (saudacao) {
-    log('INFO', 'SAUDACAO', `Saudação detectada: ${texto.substring(0, 20)}`);
+  
+  // =====================================
+  // BOT DESATIVADO (OFFLINE) - AVISA QUE NÃO TEM ATENDENTE
+  // =====================================
+  if (!botAtivo) {
+    // Funciona igual ao bot ativo, mas avisa no final que não tem atendente
+    // Números de teste IGNORAM verificação de horário
     
-    let sessao = sessoesAtendimento.get(from);
-    if (!sessao) {
-      sessao = { protocolo: gerarProtocolo(), inicio: new Date().toISOString() };
-      sessoesAtendimento.set(from, sessao);
-      estatisticas.atendimentosHoje++;
-    }
-    
-    if (!horarioAtendimento() && config.mensagemForaHorario) {
-      await enviarMsg(from, `${saudacao}\n\n⚠️ ${config.mensagemForaHorario}\n\n📋 Protocolo: ${sessao.protocolo}`);
+    // 1 - Atendente (mas não tem ninguém)
+    if (t === '1' || t.includes('atendente') || t.includes('humano')) {
+      await msg.reply('⚠️ No momento não temos atendentes disponíveis.\n\nTodos estão ocupados assim que alguém ficar livre irá atendê-lo.\n\nObrigado pela compreensão!');
       return;
     }
     
-    await enviarMsg(from, `${saudacao}\n\n${getMenu(sessao.protocolo)}`);
-    return;
-  }
-
-  // 4. TUDO BEM / COMO VAI
-  const tudoBem = detectarTudoBem(texto);
-  if (tudoBem) {
-    await enviarMsg(from, tudoBem);
-    return;
-  }
-
-  // 5. QUEM É VOCÊ
-  const quemSou = detectarQuemSou(texto);
-  if (quemSou) {
-    await enviarMsg(from, quemSou);
-    return;
-  }
-
-  // 6. AGRADECIMENTOS
-  const agradecimento = detectarAgradecimento(texto);
-  if (agradecimento) {
-    await enviarMsg(from, agradecimento);
-    return;
-  }
-
-  // 7. DESPEDIDAS
-  const despedida = detectarDespedida(texto);
-  if (despedida) {
-    await enviarMsg(from, despedida);
-    return;
-  }
-
-  // 8. CONFIRMAÇÕES
-  const confirmacao = detectarConfirmacao(texto);
-  if (confirmacao) {
-    await enviarMsg(from, confirmacao);
-    return;
-  }
-
-  // 9. MENU NUMÉRICO
-  const num = parseInt(texto);
-  if (!isNaN(num) && num >= 1 && num <= 7) {
-    const cats = baseConhecimento?.categorias || {};
-    const resp = {
-      1: cats.servicos?.respostaPadrao,
-      2: cats.horarios?.respostaPadrao,
-      3: cats.valores?.respostaPadrao,
-      4: cats.localizacao?.respostaPadrao,
-      5: cats.pagamento?.respostaPadrao,
-      6: cats.garantia?.respostaPadrao
-    };
-    
-    if (num === 7) {
-      await encaminharAtendente(from, "menu");
+    // 2 - Acessórios
+    if (t === '2' || t.includes('acessorio')) {
+      await msg.reply('📱 Acessórios para celular\n\n⚠️ No momento não temos atendentes disponíveis para fechar seu pedido.\n\nTodos estão ocupados, aguarde que alguém irá atendê-lo.');
       return;
     }
     
-    await enviarMsg(from, resp[num] || "Opção não encontrada.");
-    return;
-  }
-
-  // 10. MENU/BOT/INICIO
-  if (["menu", "bot", "inicio", "start"].includes(textoLower)) {
-    let sessao = sessoesAtendimento.get(from);
-    if (!sessao) {
-      sessao = { protocolo: gerarProtocolo(), inicio: new Date().toISOString() };
-      sessoesAtendimento.set(from, sessao);
-      estatisticas.atendimentosHoje++;
+    // 3 - Serviços
+    if (t === '3' || t.includes('servico') || t.includes('orcamento')) {
+      await msg.reply('🔧 Serviços e orçamentos\n\n⚠️ No momento não temos técnicos disponíveis.\n\nTodos estão ocupados, aguarde que alguém irá atendê-lo.');
+      return;
     }
-    await enviarMsg(from, getMenu(sessao.protocolo));
+    
+    // 4 - Outros
+    if (t === '4' || t === 'outros') {
+      await msg.reply('⚠️ No momento não temos atendentes disponíveis.\n\nTodos estão ocupados, aguarde que alguém irá atendê-lo.');
+      return;
+    }
+    
+    // 5 - Finalizar
+    if (t === '5' || t.includes('finalizar') || t.includes('obrigado')) {
+      await msg.reply('👋 Obrigado pelo contato!');
+      return;
+    }
+    
+    // 6 ou 7 - Telas
+    if (t === '6' || t === '7') {
+      await msg.reply('Me diga o modelo:');
+      return;
+    }
+    
+    // Buscar no banco
+    const { disponiveis, indisponiveis } = buscarNoBanco(texto);
+    
+    if (disponiveis.length > 0) {
+      let resposta = '';
+      disponiveis.forEach(tela => {
+        const obs = tela.observacao ? ` ${tela.observacao}` : '';
+        resposta += `${tela.modelo} ${tela.tipo}${obs}\tR$ ${tela.preco.toFixed(2)}\n`;
+      });
+      resposta += '\n⚠️ No momento não temos atendentes disponíveis para fechar seu pedido.\n\nAssim que alguém ficar livre, irá atendê-lo.';
+      await msg.reply(resposta);
+      return;
+    }
+    
+    if (indisponiveis.length > 0) {
+      await msg.reply('Esse modelo não está disponível no momento.\n\n⚠️ No momento não temos atendentes disponíveis.\n\nTodos estão ocupados, aguarde que alguém irá atendê-lo.');
+      return;
+    }
+    
+    // Se mencionou tela/preço mas não encontrou
+    if (t.includes('tela') || t.includes('preco') || t.includes('preço') || t.includes('valor')) {
+      await msg.reply('Não encontramos esse modelo.\n\n⚠️ No momento não temos atendentes disponíveis.\n\nTodos estão ocupados, aguarde que alguém irá atendê-lo.');
+      return;
+    }
+    
+    // Menu
+    if (['oi', 'ola', 'olá', 'menu', 'inicio', 'start'].some(p => t.includes(p))) {
+      await msg.reply(getMenuOffline());
+      return;
+    }
+    
+    // Resposta padrão
+    await msg.reply(getMenuOffline());
     return;
   }
-
-  // 11. BUSCAR NA BASE
-  const respBase = buscarNaBase(texto);
-  if (respBase) {
-    log('INFO', 'BASE', `Resposta base: ${from.substring(0, 15)}`);
-    await enviarMsg(from, respBase);
+  
+  // =====================================
+  // BOT ATIVADO (ONLINE) - NORMAL
+  // =====================================
+  
+  // 1 - Atendente
+  if (t === '1' || t.includes('atendente') || t.includes('humano')) {
+    clientesPausados.add(from);
+    await msg.reply('✅ Transferindo para atendente!\n\nAguarde um momento.\n\n_Para voltar ao bot, digite "bot"._');
     return;
   }
-
-  // 12. IA
-  if (config.useAI && groqClient) {
-    const respIA = await respostaIA(texto, from);
-    if (respIA) {
-      log('INFO', 'IA', `Resposta IA: ${from.substring(0, 15)}`);
-      await enviarMsg(from, respIA);
+  
+  // 2 - Acessórios
+  if (t === '2' || t.includes('acessorio')) {
+    await msg.reply('📱 Acessórios para celular\n\nDigite 1 para falar com atendente.');
+    return;
+  }
+  
+  // 3 - Serviços
+  if (t === '3' || t.includes('servico') || t.includes('orcamento')) {
+    await msg.reply('🔧 Serviços e orçamentos\n\nPara orçamentos, digite 1 para falar com técnico.');
+    return;
+  }
+  
+  // 4 - Outros
+  if (t === '4' || t === 'outros') {
+    await msg.reply('Digite 1 para falar com atendente.');
+    return;
+  }
+  
+  // 5 - Finalizar
+  if (t === '5' || t.includes('finalizar') || t.includes('obrigado')) {
+    await msg.reply('👋 Obrigado pelo contato!');
+    return;
+  }
+  
+  // 6 ou 7 - Telas
+  if (t === '6' || t === '7') {
+    // Números de teste ignoram verificação de horário
+    if (!ehTeste && !horarioAtendimento()) {
+      await msg.reply(getMensagemForaHorario());
+      return;
+    }
+    await msg.reply('Me diga o modelo:');
+    return;
+  }
+  
+  // =====================================
+  // BUSCAR NO BANCO DE DADOS
+  // =====================================
+  const { disponiveis, indisponiveis } = buscarNoBanco(texto);
+  
+  if (disponiveis.length > 0 || indisponiveis.length > 0) {
+    // Números de teste ignoram verificação de horário
+    if (!ehTeste && !horarioAtendimento()) {
+      await msg.reply(getMensagemForaHorario());
+      return;
+    }
+    
+    estatisticas.consultasHoje++;
+    
+    if (disponiveis.length > 0) {
+      let resposta = '';
+      disponiveis.forEach(tela => {
+        const obs = tela.observacao ? ` ${tela.observacao}` : '';
+        resposta += `${tela.modelo} ${tela.tipo}${obs}\tR$ ${tela.preco.toFixed(2)}\n`;
+      });
+      await msg.reply(resposta);
+      log('INFO', 'BUSCA', `Encontrado: ${disponiveis.length} telas${ehTeste ? ' [TESTE]' : ''}`);
+      return;
+    }
+    
+    if (indisponiveis.length > 0) {
+      await msg.reply('Esse modelo não está disponível no momento em estoque.\n\nDigite 1 para falar com atendente.');
       return;
     }
   }
+  
+  // Se mencionou tela/preço mas não encontrou no banco
+  if (t.includes('tela') || t.includes('preco') || t.includes('preço') || t.includes('valor')) {
+    // Números de teste ignoram verificação de horário
+    if (!ehTeste && !horarioAtendimento()) {
+      await msg.reply(getMensagemForaHorario());
+      return;
+    }
+    await msg.reply('Não encontramos esse modelo no sistema.\n\nVerifique se digitou corretamente ou digite 1 para falar com atendente.');
+    return;
+  }
+  
+  // Menu
+  if (['oi', 'ola', 'olá', 'menu', 'inicio', 'start'].some(p => t.includes(p))) {
+    await msg.reply(getMenu());
+    return;
+  }
+  
+  // Resposta padrão - menu
+  await msg.reply(getMenu());
+}
 
-  // 13. FALLBACK
-  const fallback = baseConhecimento?.fallback?.resposta || "Algumas informações você Pode Tirar Com técnico. Digite *menu* para ver as opções!";
-  await enviarMsg(from, fallback);
+function getMenu() {
+  return `Olá, se for referente a TELAS, especifique exatamente o modelo.
+
+Ex: Samsung A20S, Moto G05, Moto G30, iPhone 13
+
+SE NÃO digite uma opção:
+
+1 - Atendente
+2 - Acessórios para celular
+3 - Serviços e orçamentos
+4 - Outros
+5 - Finalizar
+6 - Telas
+7 - Preços de telas`;
+}
+
+function getMenuOffline() {
+  return `Olá, se for referente a TELAS, especifique exatamente o modelo.
+
+Ex: Samsung A20S, Moto G05, Moto G30, iPhone 13
+
+⚠️ No momento não temos atendentes disponíveis para fechar pedidos.
+Todos estão ocupados, assim que alguém ficar livre irá atendê-lo.
+
+SE NÃO digite uma opção:
+
+1 - Atendente
+2 - Acessórios para celular
+3 - Serviços e orçamentos
+4 - Outros
+5 - Finalizar
+6 - Telas
+7 - Preços de telas`;
 }
 
 // =====================================
-// SOCKET
+// SOCKET.IO
 // =====================================
 io.on("connection", (socket) => {
   socket.emit("status", { conectado: whatsappConectado, mensagem: whatsappConectado ? "Conectado!" : "Aguardando..." });
-  if (!whatsappConectado) socket.emit("qr", "loading");
+  socket.emit("bot_status", botAtivo);
+  socket.emit("modo_teste_status", { modoTeste, numerosTeste });
   
-  const pausados = [];
-  clientesPausados.forEach((v, k) => pausados.push({ telefone: k, ...v }));
-  socket.emit("pausados", pausados);
-  socket.emit("stats", estatisticas);
-});
-
-// =====================================
-// LIMPEZA
-// =====================================
-setInterval(() => {
-  const agora = Date.now();
-  ultimaInteracao.forEach((ts, tel) => {
-    if (agora - ts > 1800000) {
-      ultimaInteracao.delete(tel);
-      sessoesAtendimento.delete(tel);
-    }
+  if (!whatsappConectado) {
+    socket.emit("qr", "loading");
+  }
+  
+  socket.emit("dados_atualizados", { ...dadosTelas, botAtivo, modoTeste, numerosTeste });
+  
+  socket.emit("stats", {
+    total: dadosTelas.telas?.length || 0,
+    ativos: dadosTelas.telas?.filter(t => t.ativo).length || 0
   });
-}, 60000);
-
-setInterval(criarBackup, 3600000);
+});
 
 // =====================================
 // INICIAR
@@ -822,19 +746,16 @@ server.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
-║   🤖 BOT WHATSAPP PROFISSIONAL v7.2                      ║
-║                                                          ║
-║   ✅ Saudações inteligentes (bom dia/tarde/noite)        ║
-║   ✅ Agradecimentos, despedidas, confirmações            ║
-║   ✅ Detecção de intenção técnica                        ║
-║   ✅ Modelo Groq atualizado                              ║
+║   📱 SUA LOJA - SISTEMA DE PREÇOS                        ║
+║   🚀 Inteligente e Resposta Rápida                       ║
 ║                                                          ║
 ║   🌐 Painel: http://localhost:${PORT}                      ║
+║   🤖 Bot: ${botAtivo ? '🟢 Online' : '🔴 Offline'}                                        ║
+║   🧪 Teste: ${modoTeste ? '🟢 Ativo (' + numerosTeste.length + ' núm.)' : '🔴 Inativo'}                               ║
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
   `);
   
-  log('INFO', 'SISTEMA', 'Bot v7.2 iniciado - Modelo: ' + MODELO_GROQ);
-  io.emit("qr", "loading");
+  log('INFO', 'SISTEMA', 'Sistema iniciado - Bot ' + (botAtivo ? 'ONLINE' : 'OFFLINE') + ' | Teste: ' + (modoTeste ? 'ON' : 'OFF'));
   initWhatsApp();
 });

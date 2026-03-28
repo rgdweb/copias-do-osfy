@@ -187,6 +187,6 @@
   },
 
   "fallback": {
-    "resposta": "Algumas informações você Pode Tirar Com técnico. 🤔\n\nDigite *menu* para ver as opções ou *atendente* para falar com uma pessoa!"
+    "resposta": "Não entendi muito bem. 🤔\n\nDigite *menu* para ver as opções ou *atendente* para falar com uma pessoa!"
   }
 }

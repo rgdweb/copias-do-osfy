@@ -3,336 +3,540 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bot WhatsApp Pro - Painel</title>
+  <title>SUA LOJA - Sistema de Preços</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
+    }
+    .logo h1 { font-size: 24px; }
+    .logo small { opacity: 0.8; }
+    .status-box { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+    .status-item { background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 10px; text-align: center; }
+    .status-item .num { font-size: 28px; font-weight: bold; color: #4ade80; }
+    .status-item .label { font-size: 12px; opacity: 0.8; }
+    .whatsapp-status { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-radius: 10px; background: rgba(255,255,255,0.1); }
+    .whatsapp-status.conectado { background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; }
+    .whatsapp-status .dot { width: 12px; height: 12px; border-radius: 50%; background: #ef4444; animation: pulse 2s infinite; }
+    .whatsapp-status.conectado .dot { background: #4ade80; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    /* Botão Bot Ativo/Inativo */
+    .bot-toggle { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-radius: 10px; cursor: pointer; transition: all 0.3s; }
+    .bot-toggle.ativo { background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; }
+    .bot-toggle.inativo { background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; }
+    .bot-toggle .switch { width: 50px; height: 26px; background: #374151; border-radius: 13px; position: relative; transition: all 0.3s; }
+    .bot-toggle.ativo .switch { background: #4ade80; }
+    .bot-toggle .switch::after { content: ''; position: absolute; width: 22px; height: 22px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: all 0.3s; }
+    .bot-toggle.ativo .switch::after { left: 26px; }
+    .bot-toggle span { font-weight: bold; }
     
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #1e293b; }
-    header h1 { font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
-    .badge { background: #3b82f6; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+    .qr-container { display: none; text-align: center; padding: 30px; background: rgba(255,255,255,0.1); border-radius: 15px; margin-bottom: 20px; }
+    .qr-container.show { display: block; }
+    .qr-container img { max-width: 300px; border-radius: 15px; background: white; padding: 15px; }
+    .search-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+    .search-bar input { flex: 1; min-width: 200px; padding: 15px 20px; border: none; border-radius: 10px; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; }
+    .search-bar input::placeholder { color: rgba(255,255,255,0.5); }
+    .btn { padding: 15px 25px; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+    .btn-primary { background: linear-gradient(135deg, #4ade80, #22c55e); color: #000; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(74, 222, 128, 0.4); }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+    .table-container { background: rgba(255,255,255,0.05); border-radius: 15px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    th { background: rgba(255,255,255,0.1); font-weight: 600; text-transform: uppercase; font-size: 12px; }
+    tr:hover { background: rgba(255,255,255,0.05); }
+    tr.inativo { opacity: 0.5; }
+    .modelo { font-weight: bold; color: #4ade80; }
+    .preco { font-weight: bold; color: #fbbf24; }
+    .estoque { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+    .estoque.ok { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+    .estoque.baixo { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .estoque.zerado { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; }
+    .badge-ativo { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+    .badge-inativo { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .acoes { display: flex; gap: 8px; }
+    .acoes button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    .btn-edit { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .btn-toggle { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .btn-delete { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .acoes button:hover { transform: scale(1.1); }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+    .modal.show { display: flex; }
+    .modal-content { background: #1e293b; border-radius: 20px; padding: 30px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+    .modal h2 { margin-bottom: 25px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+    .form-group input, .form-group textarea { width: 100%; padding: 12px 15px; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; font-size: 16px; }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #4ade80; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
+    .modal-actions .btn { flex: 1; }
+    .toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; background: #1e293b; border-radius: 10px; border-left: 4px solid #4ade80; z-index: 2000; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .empty-state { text-align: center; padding: 60px 20px; opacity: 0.6; }
     
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat { background: #1e293b; padding: 16px; border-radius: 12px; text-align: center; }
-    .stat-value { font-size: 2rem; font-weight: 700; color: #3b82f6; }
-    .stat-label { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+    /* Info box */
+    .info-box { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+    .info-box p { margin: 5px 0; opacity: 0.9; font-size: 14px; }
     
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    /* Modo Teste */
+    .teste-box { background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+    .teste-box.ativo { background: rgba(74, 222, 128, 0.1); border-color: rgba(74, 222, 128, 0.5); }
+    .teste-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .teste-toggle { display: flex; align-items: center; gap: 10px; padding: 8px 15px; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.1); }
+    .teste-toggle.ativo { background: rgba(74, 222, 128, 0.2); }
+    .teste-toggle .mini-switch { width: 40px; height: 22px; background: #374151; border-radius: 11px; position: relative; }
+    .teste-toggle.ativo .mini-switch { background: #4ade80; }
+    .teste-toggle .mini-switch::after { content: ''; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.2s; }
+    .teste-toggle.ativo .mini-switch::after { left: 20px; }
+    .numeros-lista { margin-top: 10px; }
+    .numero-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(255,255,255,0.05); border-radius: 6px; margin: 5px 0; }
+    .numero-item span { font-family: monospace; }
+    .numero-item button { background: rgba(239, 68, 68, 0.2); border: none; color: #ef4444; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+    .add-numero { display: flex; gap: 10px; margin-top: 10px; }
+    .add-numero input { flex: 1; padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; background: rgba(255,255,255,0.05); color: #fff; }
     
-    .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
-    .card h2 { font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    
-    .qr-box { text-align: center; padding: 20px; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .qr-box img { max-width: 220px; border-radius: 12px; }
-    .status { padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; display: inline-block; }
-    .status.connected { background: #166534; }
-    .status.disconnected { background: #854d0e; }
-    
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 0.85rem; margin-bottom: 4px; color: #94a3b8; }
-    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 0.9rem; }
-    .form-group textarea { min-height: 80px; resize: vertical; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    
-    .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; }
-    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-primary { background: #3b82f6; color: white; }
-    .btn-success { background: #22c55e; color: white; }
-    .btn-danger { background: #ef4444; color: white; }
-    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
-    
-    .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tab { padding: 8px 16px; background: #334155; border: none; border-radius: 8px; color: #e2e8f0; cursor: pointer; font-size: 0.85rem; }
-    .tab.active { background: #3b82f6; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    
-    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #0f172a; border-radius: 8px; margin-bottom: 8px; }
-    .list-item small { color: #64748b; }
-    
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: white; padding: 12px 24px; border-radius: 8px; opacity: 0; transform: translateY(20px); transition: all 0.3s; z-index: 1000; }
-    .toast.show { opacity: 1; transform: translateY(0); }
-    .toast.error { background: #ef4444; }
-    
-    .log-box { background: #0f172a; border-radius: 8px; padding: 12px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; line-height: 1.6; }
-    .log-item { padding: 4px 0; border-bottom: 1px solid #1e293b; }
-    .log-item span { margin-right: 8px; }
-    .log-time { color: #64748b; }
-    .log-info { color: #3b82f6; }
-    .log-warn { color: #f59e0b; }
-    .log-erro { color: #ef4444; }
+    @media (max-width: 768px) {
+      .header { flex-direction: column; text-align: center; }
+      .form-row { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>🤖 Bot WhatsApp Pro <span class="badge">v5.0</span></h1>
-      <div id="statusBadge" class="status disconnected">Aguardando...</div>
-    </header>
-    
-    <div class="stats">
-      <div class="stat"><div class="stat-value" id="statRecebidas">0</div><div class="stat-label">Recebidas</div></div>
-      <div class="stat"><div class="stat-value" id="statEnviadas">0</div><div class="stat-label">Enviadas</div></div>
-      <div class="stat"><div class="stat-value" id="statAtendimentos">0</div><div class="stat-label">Atendimentos</div></div>
-      <div class="stat"><div class="stat-value" id="statPausados">0</div><div class="stat-label">Pausados</div></div>
-      <div class="stat"><div class="stat-value" id="statErros">0</div><div class="stat-label">Erros</div></div>
+    <div class="header">
+      <div class="logo">
+        <h1>SUA LOJA</h1>
+        <small>Sistema de Preços - Inteligente e Resposta Rápida</small>
+      </div>
+      <div class="status-box">
+        <div class="status-item">
+          <div class="num" id="totalTelas">0</div>
+          <div class="label">Total</div>
+        </div>
+        <div class="status-item">
+          <div class="num" id="ativosTelas">0</div>
+          <div class="label">Ativos</div>
+        </div>
+        <div class="status-item">
+          <div class="num" id="consultasHoje">0</div>
+          <div class="label">Consultas</div>
+        </div>
+        <div class="whatsapp-status" id="wppStatus">
+          <div class="dot"></div>
+          <span id="wppText">Aguardando...</span>
+        </div>
+        <div class="bot-toggle ativo" id="botToggle" onclick="toggleBot()">
+          <div class="switch"></div>
+          <span id="botStatus">Online</span>
+        </div>
+      </div>
     </div>
     
-    <div class="grid">
-      <div>
-        <div class="card">
-          <h2>📲 WhatsApp</h2>
-          <div class="qr-box" id="qrBox"><p>Carregando...</p></div>
-          <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
-            <button class="btn btn-primary btn-sm" id="btnRestart">Reiniciar</button>
-            <button class="btn btn-danger btn-sm" id="btnLimpar">Limpar Sessão</button>
-          </div>
+    <div class="info-box">
+      <p><strong>🟢 Bot Online:</strong> Responde preços, processa pedidos e atende normalmente</p>
+      <p><strong>🔴 Bot Offline:</strong> Mostra preços mas não processa pedidos - cliente aguarda atendente</p>
+    </div>
+    
+    <!-- MODO TESTE -->
+    <div class="teste-box" id="testeBox">
+      <div class="teste-header">
+        <div>
+          <strong>🧪 Modo Teste</strong>
+          <p style="font-size: 12px; opacity: 0.7; margin-top: 4px;">Números autorizados ignoram horário de atendimento</p>
         </div>
-        
-        <div class="card">
-          <h2>📋 Clientes Pausados</h2>
-          <div id="listaPausados"><p style="color:#64748b; text-align:center;">Nenhum</p></div>
-          <button class="btn btn-sm btn-primary" id="btnAtualizar" style="margin-top:12px;">Atualizar</button>
-        </div>
-        
-        <div class="card">
-          <h2>📄 Logs Recentes</h2>
-          <div class="log-box" id="logBox"><p style="color:#64748b;">Logs aparecerão aqui...</p></div>
+        <div class="teste-toggle" id="testeToggle" onclick="toggleModoTeste()">
+          <div class="mini-switch"></div>
+          <span id="testeStatus">OFF</span>
         </div>
       </div>
       
-      <div>
-        <div class="tabs">
-          <button class="tab active" data-tab="empresa">Empresa</button>
-          <button class="tab" data-tab="servicos">Serviços</button>
-          <button class="tab" data-tab="horarios">Horários</button>
-          <button class="tab" data-tab="ia">IA</button>
-          <button class="tab" data-tab="extras">Extras</button>
+      <div class="numeros-lista" id="numerosLista">
+        <!-- Números serão inseridos aqui -->
+      </div>
+      
+      <div class="add-numero">
+        <input type="text" id="novoNumero" placeholder="Ex: 5511999999999">
+        <button class="btn btn-primary" onclick="adicionarNumero()" style="padding: 10px 20px;">+ Adicionar</button>
+      </div>
+    </div>
+    
+    <div class="qr-container" id="qrContainer">
+      <h3>Escaneie o QR Code</h3>
+      <p>Abra o WhatsApp > Dispositivos > Conectar</p>
+      <img id="qrImage" src="" alt="QR Code">
+    </div>
+    
+    <div class="search-bar">
+      <input type="text" id="busca" placeholder="Buscar por modelo...">
+      <button class="btn btn-primary" onclick="abrirModal()">+ Nova Tela</button>
+    </div>
+    
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Modelo</th>
+            <th>Tipo</th>
+            <th>Preço</th>
+            <th>Estoque</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaTelas">
+          <tr><td colspan="6" class="empty-state">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h2 id="modalTitulo">+ Nova Tela</h2>
+      <input type="hidden" id="telaId">
+      <div class="form-group">
+        <label>Modelo</label>
+        <input type="text" id="modelo" placeholder="Ex: iPhone 13 Pro Max, A22, Moto G15">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <input type="text" id="tipo" placeholder="Ex: OLED COM ARO, INCELL">
+      </div>
+      <div class="form-group">
+        <label>Observação</label>
+        <input type="text" id="observacao" placeholder="Ex: Caixa Vermelha">
+      </div>
+      <div class="form-group">
+        <label>Compatibilidade (separar por vírgula)</label>
+        <input type="text" id="compatibilidade" placeholder="Ex: G15, G35, E15">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Preço (R$)</label>
+          <input type="number" id="preco" step="0.01" placeholder="0.00">
         </div>
-        
-        <div class="card tab-content active" id="tab-empresa">
-          <h2>🏢 Dados da Empresa</h2>
-          <div class="form-row">
-            <div class="form-group"><label>Nome</label><input id="empNome" placeholder="Nome da empresa"></div>
-            <div class="form-group"><label>Telefone</label><input id="empTel" placeholder="(00) 00000-0000"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>WhatsApp</label><input id="empWpp" placeholder="5500000000000"></div>
-            <div class="form-group"><label>Email</label><input id="empEmail" placeholder="email@exemplo.com"></div>
-          </div>
-          <div class="form-group"><label>Endereço</label><textarea id="empEnd" placeholder="Endereço completo"></textarea></div>
-          <div class="form-group"><label>Cidade</label><input id="empCid" placeholder="Cidade"></div>
-          <div class="form-group"><label>Garantia</label><input id="empGar" placeholder="90 dias para peças e serviços"></div>
-          <button class="btn btn-success" id="btnEmp">Salvar Empresa</button>
+        <div class="form-group">
+          <label>Estoque</label>
+          <input type="number" id="estoque" placeholder="0">
         </div>
-        
-        <div class="card tab-content" id="tab-servicos">
-          <h2>🔧 Serviços</h2>
-          <div class="form-group"><label>Serviços (um por linha)</label><textarea id="servicos" rows="8" placeholder="Conserto de celulares&#10;Formatação de notebooks&#10;..."></textarea></div>
-          <div class="form-group"><label>Formas de Pagamento (uma por linha)</label><textarea id="pagamentos" rows="4" placeholder="Dinheiro&#10;PIX&#10;Cartão"></textarea></div>
-          <button class="btn btn-success" id="btnServ">Salvar</button>
-        </div>
-        
-        <div class="card tab-content" id="tab-horarios">
-          <h2>⏰ Horários</h2>
-          <div class="form-group"><label>Segunda a Sexta</label><input id="horSemana" placeholder="8:30 às 12:00 e 13:30 às 17:30"></div>
-          <div class="form-group"><label>Sábado</label><input id="horSab" placeholder="8:00 às 12:00"></div>
-          <div class="form-group"><label>Domingo</label><input id="horDom" placeholder="Fechado"></div>
-          <div class="form-group"><label>Mensagem fora do horário</label><textarea id="msgFora" placeholder="Estamos fora do horário..."></textarea></div>
-          <button class="btn btn-success" id="btnHor">Salvar</button>
-        </div>
-        
-        <div class="card tab-content" id="tab-ia">
-          <h2>🤖 Configuração IA</h2>
-          <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:12px;">Configure a chave do Groq para respostas inteligentes.</p>
-          <a href="https://console.groq.com/keys" target="_blank" style="display:inline-block; margin-bottom:12px; color:#3b82f6;">🔑 Obter chave gratuita</a>
-          <div class="form-group"><label>Chave API Groq</label><input type="password" id="apiKey" placeholder="gsk_..."></div>
-          <div class="form-group"><label>Modelo</label><select id="modelo">
-            <option value="llama-3.1-8b-instant">Llama 3.1 8B (rápido)</option>
-            <option value="llama-3.1-70b-versatile">Llama 3.1 70B (melhor)</option>
-          </select></div>
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-            <input type="checkbox" id="usarIA" checked>
-            <label for="usarIA">Usar IA</label>
-          </div>
-          <button class="btn btn-success" id="btnIA">Salvar Configuração</button>
-        </div>
-        
-        <div class="card tab-content" id="tab-extras">
-          <h2>📝 Informações Extras</h2>
-          <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:12px;">Adicione informações que a IA deve saber.</p>
-          <div class="form-group"><label>Título</label><input id="infoTit" placeholder="Ex: Entrega, Domicílio"></div>
-          <div class="form-group"><label>Descrição</label><textarea id="infoCont" placeholder="Detalhes..."></textarea></div>
-          <button class="btn btn-primary" id="btnAddInfo">Adicionar</button>
-          <div id="listaExtras" style="margin-top:16px;"></div>
-        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarTela()">Salvar</button>
       </div>
     </div>
   </div>
   
-  <div id="toast" class="toast"></div>
-  
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const $ = id => document.getElementById(id);
     const socket = io();
+    let telas = [];
+    let botAtivo = true;
     
-    // Toast
-    function toast(msg, err = false) {
-      const t = $('toast');
-      t.textContent = msg;
-      t.className = 'toast show' + (err ? ' error' : '');
-      setTimeout(() => t.className = 'toast', 3000);
+    socket.on('dados_atualizados', (dados) => {
+      telas = dados.telas || [];
+      botAtivo = dados.botAtivo !== false;
+      atualizarBotToggle();
+      renderizarTabela();
+      atualizarStats();
+    });
+    
+    socket.on('tela_adicionada', (tela) => {
+      telas.push(tela);
+      renderizarTabela();
+      atualizarStats();
+      showToast('Tela adicionada!');
+    });
+    
+    socket.on('tela_atualizada', (tela) => {
+      const idx = telas.findIndex(t => t.id === tela.id);
+      if (idx !== -1) telas[idx] = tela;
+      renderizarTabela();
+      atualizarStats();
+      showToast('Tela atualizada!');
+    });
+    
+    socket.on('tela_removida', (id) => {
+      telas = telas.filter(t => t.id !== id);
+      renderizarTabela();
+      atualizarStats();
+      showToast('Tela removida!');
+    });
+    
+    socket.on('bot_status', (ativo) => {
+      botAtivo = ativo;
+      atualizarBotToggle();
+    });
+    
+    socket.on('status', (data) => {
+      const statusEl = document.getElementById('wppStatus');
+      const textEl = document.getElementById('wppText');
+      const qrContainer = document.getElementById('qrContainer');
+      if (data.conectado) {
+        statusEl.classList.add('conectado');
+        textEl.textContent = 'Conectado!';
+        qrContainer.classList.remove('show');
+      } else {
+        statusEl.classList.remove('conectado');
+        textEl.textContent = data.mensagem || 'Aguardando...';
+      }
+    });
+    
+    socket.on('qr', (img) => {
+      const qrContainer = document.getElementById('qrContainer');
+      const qrImage = document.getElementById('qrImage');
+      if (img && img !== 'loading') {
+        qrImage.src = img;
+        qrContainer.classList.add('show');
+      } else {
+        qrContainer.classList.remove('show');
+      }
+    });
+    
+    document.getElementById('busca').addEventListener('input', (e) => {
+      renderizarTabela(e.target.value);
+    });
+    
+    function atualizarBotToggle() {
+      const toggle = document.getElementById('botToggle');
+      const status = document.getElementById('botStatus');
+      if (botAtivo) {
+        toggle.classList.remove('inativo');
+        toggle.classList.add('ativo');
+        status.textContent = 'Online';
+      } else {
+        toggle.classList.remove('ativo');
+        toggle.classList.add('inativo');
+        status.textContent = 'Offline';
+      }
     }
     
-    // Tabs
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.onclick = () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        tab.classList.add('active');
-        $('tab-' + tab.dataset.tab).classList.add('active');
-      };
+    function toggleBot() {
+      fetch('/api/bot/toggle', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          botAtivo = data.ativo;
+          atualizarBotToggle();
+          showToast(data.ativo ? 'Bot ATIVADO - Online!' : 'Bot DESATIVADO - Offline');
+        });
+    }
+    
+    // =====================================
+    // MODO TESTE
+    // =====================================
+    let modoTeste = false;
+    let numerosTeste = [];
+    
+    socket.on('modo_teste_status', (data) => {
+      modoTeste = data.modoTeste;
+      numerosTeste = data.numerosTeste || [];
+      atualizarModoTesteUI();
     });
     
-    // Socket
-    socket.on('qr', data => {
-      if (data === 'loading') $('qrBox').innerHTML = '<p>⏳ Gerando QR Code...</p>';
-      else if (data) $('qrBox').innerHTML = `<img src="${data}"><p style="margin-top:12px; color:#94a3b8;">Escaneie com WhatsApp</p>`;
-      else $('qrBox').innerHTML = '<p class="status connected">✅ Conectado!</p>';
-    });
-    
-    socket.on('status', s => {
-      const badge = $('statusBadge');
-      badge.textContent = s.conectado ? 'Conectado' : (s.mensagem || 'Desconectado');
-      badge.className = 'status ' + (s.conectado ? 'connected' : 'disconnected');
-    });
-    
-    socket.on('pausados', lista => {
-      $('statPausados').textContent = lista.length;
-      if (!lista.length) { $('listaPausados').innerHTML = '<p style="color:#64748b; text-align:center;">Nenhum</p>'; return; }
-      $('listaPausados').innerHTML = lista.map(p => `
-        <div class="list-item">
-          <div><strong>${p.telefone.substring(0,20)}...</strong><br><small>${p.desde ? new Date(p.desde).toLocaleString('pt-BR') : ''} - ${p.motivo || 'manual'}</small></div>
-          <button class="btn btn-sm btn-danger" onclick="reativar('${p.telefone}')">Reativar</button>
-        </div>
-      `).join('');
-    });
-    
-    socket.on('stats', s => {
-      $('statRecebidas').textContent = s.mensagensRecebidas || 0;
-      $('statEnviadas').textContent = s.mensagensEnviadas || 0;
-      $('statAtendimentos').textContent = s.atendimentosHoje || 0;
-      $('statErros').textContent = s.erros || 0;
-    });
-    
-    window.reativar = async tel => {
-      await fetch('/api/pausar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefone: tel, pausar: false }) });
-      atualizar();
-      toast('Reativado!');
-    };
-    
-    // Carregar dados
-    async function carregar() {
-      const base = await fetch('/api/base').then(r => r.json());
-      const cfg = await fetch('/api/config/full').then(r => r.json());
+    function atualizarModoTesteUI() {
+      const box = document.getElementById('testeBox');
+      const toggle = document.getElementById('testeToggle');
+      const status = document.getElementById('testeStatus');
+      const lista = document.getElementById('numerosLista');
       
-      if (base.empresa) {
-        $('empNome').value = base.empresa.nome || '';
-        $('empTel').value = base.empresa.telefone || '';
-        $('empWpp').value = base.empresa.whatsapp || '';
-        $('empEmail').value = base.empresa.email || '';
-        $('empEnd').value = base.empresa.endereco || '';
-        $('empCid').value = base.empresa.cidade || '';
-        $('empGar').value = base.empresa.garantia || '';
-        $('servicos').value = (base.empresa.servicos || []).join('\n');
-        $('pagamentos').value = (base.empresa.formasPagamento || []).join('\n');
-        if (base.empresa.horarioAtendimento) {
-          $('horSemana').value = base.empresa.horarioAtendimento.semana || '';
-          $('horSab').value = base.empresa.horarioAtendimento.sabado || '';
-          $('horDom').value = base.empresa.horarioAtendimento.domingo || '';
-        }
+      if (modoTeste) {
+        box.classList.add('ativo');
+        toggle.classList.add('ativo');
+        status.textContent = 'ON';
+      } else {
+        box.classList.remove('ativo');
+        toggle.classList.remove('ativo');
+        status.textContent = 'OFF';
       }
       
-      $('apiKey').value = cfg.groqApiKey || '';
-      $('modelo').value = cfg.model || 'llama-3.1-8b-instant';
-      $('usarIA').checked = cfg.useAI !== false;
-      $('msgFora').value = cfg.mensagemForaHorario || '';
+      // Renderizar números
+      if (numerosTeste.length === 0) {
+        lista.innerHTML = '<p style="opacity: 0.6; font-size: 13px;">Nenhum número cadastrado</p>';
+      } else {
+        lista.innerHTML = numerosTeste.map(num => {
+          const display = num.replace('@c.us', '');
+          return `
+            <div class="numero-item">
+              <span>${display}</span>
+              <button onclick="removerNumero('${num}')">Remover</button>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+    
+    function toggleModoTeste() {
+      fetch('/api/teste/toggle', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          modoTeste = data.modoTeste;
+          numerosTeste = data.numerosTeste || [];
+          atualizarModoTesteUI();
+          showToast(modoTeste ? '🧪 Modo Teste ATIVADO' : 'Modo Teste desativado');
+        });
+    }
+    
+    function adicionarNumero() {
+      const input = document.getElementById('novoNumero');
+      const numero = input.value.trim();
+      if (!numero) return;
       
-      renderExtras(base.informacoesAdicionais || []);
+      fetch('/api/teste/numero', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numero })
+      })
+        .then(r => r.json())
+        .then(data => {
+          modoTeste = data.modoTeste;
+          numerosTeste = data.numerosTeste || [];
+          atualizarModoTesteUI();
+          input.value = '';
+          showToast('Número adicionado!');
+        });
     }
     
-    function renderExtras(lista) {
-      if (!lista.length) { $('listaExtras').innerHTML = ''; return; }
-      $('listaExtras').innerHTML = '<h3 style="font-size:0.9rem; margin-bottom:8px;">Cadastrados:</h3>' + lista.map((e, i) => `
-        <div class="list-item" style="flex-direction:column; align-items:flex-start;">
-          <strong>${e.titulo}</strong>
-          <p style="font-size:0.85rem; color:#94a3b8;">${e.conteudo}</p>
-        </div>
-      `).join('');
+    function removerNumero(numero) {
+      fetch(`/api/teste/numero/${encodeURIComponent(numero)}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(data => {
+          modoTeste = data.modoTeste;
+          numerosTeste = data.numerosTeste || [];
+          atualizarModoTesteUI();
+          showToast('Número removido');
+        });
     }
     
-    async function atualizar() {
-      const pausados = await fetch('/api/pausados').then(r => r.json());
-      socket.emit('pausados', pausados);
-      $('statPausados').textContent = pausados.length;
+    function renderizarTabela(filtro = '') {
+      const tbody = document.getElementById('tabelaTelas');
+      const buscaLower = filtro.toLowerCase();
+      let lista = telas;
+      if (filtro) {
+        lista = telas.filter(t => 
+          t.modelo.toLowerCase().includes(buscaLower) ||
+          t.tipo.toLowerCase().includes(buscaLower)
+        );
+      }
+      if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma tela encontrada</td></tr>';
+        return;
+      }
+      tbody.innerHTML = lista.map(tela => {
+        const estoqueClass = tela.estoque === 0 ? 'zerado' : tela.estoque < 5 ? 'baixo' : 'ok';
+        const statusClass = tela.ativo ? 'badge-ativo' : 'badge-inativo';
+        const statusText = tela.ativo ? 'Ativo' : 'Inativo';
+        const rowClass = tela.ativo ? '' : 'inativo';
+        return `
+          <tr class="${rowClass}">
+            <td><div class="modelo">${tela.modelo}</div><small style="opacity:0.7">${tela.observacao || ''}</small></td>
+            <td>${tela.tipo}</td>
+            <td class="preco">R$ ${tela.preco.toFixed(2)}</td>
+            <td><span class="estoque ${estoqueClass}">${tela.estoque} un</span></td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
+            <td>
+              <div class="acoes">
+                <button class="btn-edit" onclick="editarTela('${tela.id}')">✏️</button>
+                <button class="btn-toggle" onclick="toggleTela('${tela.id}')">${tela.ativo ? '⏸️' : '▶️'}</button>
+                <button class="btn-delete" onclick="deletarTela('${tela.id}')">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
     
-    // Botões
-    $('btnRestart').onclick = async () => { await fetch('/api/restart', { method: 'POST' }); toast('Reiniciando...'); };
-    $('btnLimpar').onclick = async () => { if (confirm('Limpar sessão?')) { await fetch('/api/restart?limpar=1', { method: 'POST' }); toast('Sessão limpa!'); } };
-    $('btnAtualizar').onclick = atualizar;
+    function atualizarStats() {
+      document.getElementById('totalTelas').textContent = telas.length;
+      document.getElementById('ativosTelas').textContent = telas.filter(t => t.ativo).length;
+      fetch('/api/stats').then(r => r.json()).then(data => {
+        document.getElementById('consultasHoje').textContent = data.consultasHoje || 0;
+      });
+    }
     
-    $('btnEmp').onclick = async () => {
-      await fetch('/api/empresa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-        nome: $('empNome').value, telefone: $('empTel').value, whatsapp: $('empWpp').value, email: $('empEmail').value,
-        endereco: $('empEnd').value, cidade: $('empCid').value, garantia: $('empGar').value
-      })});
-      toast('Salvo!');
-    };
+    function abrirModal() {
+      document.getElementById('modalTitulo').textContent = '+ Nova Tela';
+      document.getElementById('telaId').value = '';
+      document.getElementById('modelo').value = '';
+      document.getElementById('tipo').value = '';
+      document.getElementById('observacao').value = '';
+      document.getElementById('compatibilidade').value = '';
+      document.getElementById('preco').value = '';
+      document.getElementById('estoque').value = '';
+      document.getElementById('modal').classList.add('show');
+    }
     
-    $('btnServ').onclick = async () => {
-      const base = await fetch('/api/base').then(r => r.json());
-      base.empresa = base.empresa || {};
-      base.empresa.servicos = $('servicos').value.split('\n').filter(v => v.trim());
-      base.empresa.formasPagamento = $('pagamentos').value.split('\n').filter(v => v.trim());
-      await fetch('/api/base', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(base) });
-      toast('Salvo!');
-    };
+    function fecharModal() {
+      document.getElementById('modal').classList.remove('show');
+    }
     
-    $('btnHor').onclick = async () => {
-      const base = await fetch('/api/base').then(r => r.json());
-      base.empresa = base.empresa || {};
-      base.empresa.horarioAtendimento = { semana: $('horSemana').value, sabado: $('horSab').value, domingo: $('horDom').value };
-      await fetch('/api/base', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(base) });
-      await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mensagemForaHorario: $('msgFora').value }) });
-      toast('Salvo!');
-    };
+    function editarTela(id) {
+      const tela = telas.find(t => t.id === id);
+      if (!tela) return;
+      document.getElementById('modalTitulo').textContent = 'Editar Tela';
+      document.getElementById('telaId').value = tela.id;
+      document.getElementById('modelo').value = tela.modelo;
+      document.getElementById('tipo').value = tela.tipo;
+      document.getElementById('observacao').value = tela.observacao || '';
+      document.getElementById('compatibilidade').value = (tela.compatibilidade || []).join(', ');
+      document.getElementById('preco').value = tela.preco;
+      document.getElementById('estoque').value = tela.estoque;
+      document.getElementById('modal').classList.add('show');
+    }
     
-    $('btnIA').onclick = async () => {
-      await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-        groqApiKey: $('apiKey').value, model: $('modelo').value, useAI: $('usarIA').checked
-      })});
-      toast('Configuração salva!');
-    };
+    function salvarTela() {
+      const id = document.getElementById('telaId').value;
+      const modelo = document.getElementById('modelo').value.trim();
+      const tipo = document.getElementById('tipo').value.trim();
+      const observacao = document.getElementById('observacao').value.trim();
+      const compatibilidadeStr = document.getElementById('compatibilidade').value.trim();
+      const preco = parseFloat(document.getElementById('preco').value) || 0;
+      const estoque = parseInt(document.getElementById('estoque').value) || 0;
+      if (!modelo || !tipo) { showToast('Preencha modelo e tipo!'); return; }
+      const compatibilidade = compatibilidadeStr ? compatibilidadeStr.split(',').map(c => c.trim()).filter(c => c) : [];
+      const dados = { modelo, tipo, observacao, compatibilidade, preco, estoque };
+      if (id) {
+        fetch(`/api/telas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => fecharModal());
+      } else {
+        fetch('/api/telas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...dados, ativo: true }) }).then(() => fecharModal());
+      }
+    }
     
-    $('btnAddInfo').onclick = async () => {
-      const titulo = $('infoTit').value.trim();
-      const conteudo = $('infoCont').value.trim();
-      if (!titulo || !conteudo) { toast('Preencha os campos!', true); return; }
-      await fetch('/api/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titulo, conteudo }) });
-      $('infoTit').value = '';
-      $('infoCont').value = '';
-      const base = await fetch('/api/base').then(r => r.json());
-      renderExtras(base.informacoesAdicionais || []);
-      toast('Adicionado!');
-    };
+    function toggleTela(id) {
+      fetch(`/api/telas/${id}/toggle`, { method: 'POST' });
+    }
     
-    carregar();
-    setInterval(atualizar, 10000);
+    function deletarTela(id) {
+      if (!confirm('Excluir esta tela?')) return;
+      fetch(`/api/telas/${id}`, { method: 'DELETE' });
+    }
+    
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+    
+    document.getElementById('modal').addEventListener('click', (e) => {
+      if (e.target.id === 'modal') fecharModal();
+    });
+    
+    setInterval(atualizarStats, 10000);
   </script>
 </body>
 </html>
