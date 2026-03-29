@@ -8,9 +8,9 @@
     {
       "id": "1",
       "modelo": "IPHONE 13 PRO MAX",
+      "marca": "iphone",
       "tipo": "OLED QUALIDADE ORIGINAL MARCA PSH",
       "observacao": "CAIXA VERMELHA - PRECISA SOLDAR C.I",
-      "compatibilidade": [],
       "preco": 375,
       "estoque": 10,
       "ativo": true
@@ -18,9 +18,9 @@
     {
       "id": "2",
       "modelo": "IPHONE 13 PRO MAX",
+      "marca": "iphone",
       "tipo": "QUALIDADE ORIGINAL MARCA PSH SCREEN ASSEMBLY",
       "observacao": "BOX BLUE",
-      "compatibilidade": [],
       "preco": 700,
       "estoque": 5,
       "ativo": true
@@ -28,9 +28,9 @@
     {
       "id": "3",
       "modelo": "IPHONE 13 PRO MAX",
+      "marca": "iphone",
       "tipo": "JK COM C.I LCD",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 256,
       "estoque": 8,
       "ativo": true
@@ -38,23 +38,19 @@
     {
       "id": "4",
       "modelo": "IPHONE 13 PRO MAX",
+      "marca": "iphone",
       "tipo": "OLED GX OU DD QUALIDADE PREMIUM",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 380,
       "estoque": 15,
       "ativo": true
     },
     {
       "id": "5",
-      "modelo": "MOTO G05",
+      "modelo": "MOTO G05 /G15 /G35 /E15",
+      "marca": "motorola",
       "tipo": "SEM ARO",
       "observacao": "",
-      "compatibilidade": [
-        "G15",
-        "G35",
-        "E15"
-      ],
       "preco": 80,
       "estoque": 20,
       "ativo": true
@@ -62,9 +58,9 @@
     {
       "id": "6",
       "modelo": "MOTO G15",
+      "marca": "motorola",
       "tipo": "COM ARO CHINA",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 110,
       "estoque": 12,
       "ativo": true
@@ -72,23 +68,19 @@
     {
       "id": "7",
       "modelo": "MOTO G15",
+      "marca": "motorola",
       "tipo": "COM ARO PREMIUM FUTURE",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 135,
       "estoque": 8,
       "ativo": true
     },
     {
       "id": "8",
-      "modelo": "MOTO G13",
+      "modelo": "MOTO G13 /G23 /G34 /G53",
+      "marca": "motorola",
       "tipo": "SEM ARO",
       "observacao": "",
-      "compatibilidade": [
-        "G23",
-        "G34",
-        "G53"
-      ],
       "preco": 90,
       "estoque": 25,
       "ativo": true
@@ -96,59 +88,59 @@
     {
       "id": "9",
       "modelo": "MOTO G34",
+      "marca": "motorola",
       "tipo": "5G COM ARO VIVID",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 125,
       "estoque": 10,
       "ativo": true
     },
     {
       "id": "10",
-      "modelo": "A22 4G",
+      "modelo": "SAMSUNG A22 4G",
+      "marca": "samsung",
       "tipo": "OLED CHINA",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 210,
       "estoque": 7,
       "ativo": true
     },
     {
       "id": "11",
-      "modelo": "A22 4G",
+      "modelo": "SAMSUNG A22 4G",
+      "marca": "samsung",
       "tipo": "OLED COM ARO FUTURE",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 229,
       "estoque": 5,
       "ativo": true
     },
     {
       "id": "12",
-      "modelo": "A22 4G",
+      "modelo": "SAMSUNG A22 4G",
+      "marca": "samsung",
       "tipo": "INCELL COM ARO CHINA",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 70,
       "estoque": 15,
       "ativo": true
     },
     {
       "id": "13",
-      "modelo": "A22 5G",
+      "modelo": "SAMSUNG A22 5G",
+      "marca": "samsung",
       "tipo": "SEM ARO",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 95,
       "estoque": 12,
       "ativo": true
     },
     {
       "id": "14",
-      "modelo": "A22 5G",
+      "modelo": "SAMSUNG A22 5G",
+      "marca": "samsung",
       "tipo": "COM ARO",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 125,
       "estoque": 8,
       "ativo": true
@@ -156,9 +148,9 @@
     {
       "id": "15",
       "modelo": "REDMI A3",
+      "marca": "xiaomi",
       "tipo": "COM ARO FUTURE PREMIUM",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 115,
       "estoque": 10,
       "ativo": true
@@ -166,116 +158,99 @@
     {
       "id": "16",
       "modelo": "REDMI A3",
+      "marca": "xiaomi",
       "tipo": "SEM ARO",
       "observacao": "NOVO A3",
-      "compatibilidade": [],
       "preco": 95,
       "estoque": 15,
       "ativo": true
     },
     {
       "id": "17",
-      "modelo": "REDMI 9A",
+      "modelo": "REDMI 9A /9C /9I /POCO C3",
+      "marca": "xiaomi",
       "tipo": "DISPLAY SEM ARO",
       "observacao": "",
-      "compatibilidade": [
-        "9C",
-        "9I",
-        "POCO C3"
-      ],
       "preco": 70,
       "estoque": 30,
       "ativo": true
     },
     {
       "id": "18",
-      "modelo": "REDMI 9A",
+      "modelo": "REDMI 9A /9C /9I /POCO C3",
+      "marca": "xiaomi",
       "tipo": "COM ARO CHINA",
       "observacao": "",
-      "compatibilidade": [
-        "9C",
-        "9I",
-        "POCO C3"
-      ],
       "preco": 100,
       "estoque": 20,
       "ativo": true
     },
     {
       "id": "19",
-      "modelo": "A02S",
+      "modelo": "SAMSUNG A02S /A03 /A03S /A04E /M02S /M04",
+      "marca": "samsung",
       "tipo": "SEM ARO",
       "observacao": "",
-      "compatibilidade": [
-        "A03",
-        "A03S",
-        "A04E",
-        "M02S",
-        "M04"
-      ],
       "preco": 75,
       "estoque": 25,
       "ativo": true
     },
     {
       "id": "20",
-      "modelo": "A03",
+      "modelo": "SAMSUNG A03",
+      "marca": "samsung",
       "tipo": "COM ARO ORIGINAL SAMSUNG",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 175,
       "estoque": 5,
       "ativo": true
     },
     {
       "id": "21",
-      "modelo": "A03",
+      "modelo": "SAMSUNG A03",
+      "marca": "samsung",
       "tipo": "COM ARO CHINA",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 100,
       "estoque": 18,
       "ativo": true
     },
     {
       "id": "22",
-      "modelo": "A23 5G",
+      "modelo": "SAMSUNG A23 5G",
+      "marca": "samsung",
       "tipo": "SEM ARO",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 85,
       "estoque": 12,
       "ativo": true
     },
     {
       "id": "23",
-      "modelo": "A23 5G",
+      "modelo": "SAMSUNG A23 5G",
+      "marca": "samsung",
       "tipo": "COM ARO",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 125,
       "estoque": 8,
       "ativo": true
     },
     {
       "id": "24",
-      "modelo": "S20",
+      "modelo": "SAMSUNG S20 /S20+ /S20 ULTRA",
+      "marca": "samsung",
       "tipo": "OLED ORIGINAL SAMSUNG",
       "observacao": "",
-      "compatibilidade": [
-        "S20+",
-        "S20 ULTRA"
-      ],
       "preco": 450,
       "estoque": 3,
       "ativo": true
     },
     {
       "id": "25",
-      "modelo": "S20",
+      "modelo": "SAMSUNG S20",
+      "marca": "samsung",
       "tipo": "OLED CHINA",
       "observacao": "",
-      "compatibilidade": [],
       "preco": 280,
       "estoque": 5,
       "ativo": true

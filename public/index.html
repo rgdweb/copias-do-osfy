@@ -189,6 +189,7 @@
       <table>
         <thead>
           <tr>
+            <th>Marca</th>
             <th>Modelo</th>
             <th>Tipo</th>
             <th>Preço</th>
@@ -208,9 +209,17 @@
     <div class="modal-content">
       <h2 id="modalTitulo">+ Nova Tela</h2>
       <input type="hidden" id="telaId">
-      <div class="form-group">
-        <label>Modelo</label>
-        <input type="text" id="modelo" placeholder="Ex: iPhone 13 Pro Max, A22, Moto G15">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Marca</label>
+          <select id="marca" style="width: 100%; padding: 12px 15px; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; font-size: 16px;">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Modelo</label>
+          <input type="text" id="modelo" placeholder="Ex: MOTO G05 /G15 /G35 /E15">
+        </div>
       </div>
       <div class="form-group">
         <label>Tipo</label>
@@ -219,10 +228,6 @@
       <div class="form-group">
         <label>Observação</label>
         <input type="text" id="observacao" placeholder="Ex: Caixa Vermelha">
-      </div>
-      <div class="form-group">
-        <label>Compatibilidade (separar por vírgula)</label>
-        <input type="text" id="compatibilidade" placeholder="Ex: G15, G35, E15">
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -246,6 +251,14 @@
     const socket = io();
     let telas = [];
     let botAtivo = true;
+    let marcas = [];
+    
+    // Carregar marcas ao iniciar
+    fetch('/api/marcas').then(r => r.json()).then(data => {
+      marcas = data;
+      const select = document.getElementById('marca');
+      select.innerHTML = '<option value="">Selecione...</option>' + marcas.map(m => `<option value="${m}">${m.toUpperCase()}</option>`).join('');
+    });
     
     socket.on('dados_atualizados', (dados) => {
       telas = dados.telas || [];
@@ -432,7 +445,7 @@
         );
       }
       if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma tela encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma tela encontrada</td></tr>';
         return;
       }
       tbody.innerHTML = lista.map(tela => {
@@ -440,8 +453,10 @@
         const statusClass = tela.ativo ? 'badge-ativo' : 'badge-inativo';
         const statusText = tela.ativo ? 'Ativo' : 'Inativo';
         const rowClass = tela.ativo ? '' : 'inativo';
+        const marcaDisplay = tela.marca ? tela.marca.toUpperCase() : '-';
         return `
           <tr class="${rowClass}">
+            <td><span class="badge badge-ativo">${marcaDisplay}</span></td>
             <td><div class="modelo">${tela.modelo}</div><small style="opacity:0.7">${tela.observacao || ''}</small></td>
             <td>${tela.tipo}</td>
             <td class="preco">R$ ${tela.preco.toFixed(2)}</td>
@@ -470,10 +485,10 @@
     function abrirModal() {
       document.getElementById('modalTitulo').textContent = '+ Nova Tela';
       document.getElementById('telaId').value = '';
+      document.getElementById('marca').value = '';
       document.getElementById('modelo').value = '';
       document.getElementById('tipo').value = '';
       document.getElementById('observacao').value = '';
-      document.getElementById('compatibilidade').value = '';
       document.getElementById('preco').value = '';
       document.getElementById('estoque').value = '';
       document.getElementById('modal').classList.add('show');
@@ -488,10 +503,10 @@
       if (!tela) return;
       document.getElementById('modalTitulo').textContent = 'Editar Tela';
       document.getElementById('telaId').value = tela.id;
+      document.getElementById('marca').value = tela.marca || '';
       document.getElementById('modelo').value = tela.modelo;
       document.getElementById('tipo').value = tela.tipo;
       document.getElementById('observacao').value = tela.observacao || '';
-      document.getElementById('compatibilidade').value = (tela.compatibilidade || []).join(', ');
       document.getElementById('preco').value = tela.preco;
       document.getElementById('estoque').value = tela.estoque;
       document.getElementById('modal').classList.add('show');
@@ -499,15 +514,14 @@
     
     function salvarTela() {
       const id = document.getElementById('telaId').value;
+      const marca = document.getElementById('marca').value.trim();
       const modelo = document.getElementById('modelo').value.trim();
       const tipo = document.getElementById('tipo').value.trim();
       const observacao = document.getElementById('observacao').value.trim();
-      const compatibilidadeStr = document.getElementById('compatibilidade').value.trim();
       const preco = parseFloat(document.getElementById('preco').value) || 0;
       const estoque = parseInt(document.getElementById('estoque').value) || 0;
       if (!modelo || !tipo) { showToast('Preencha modelo e tipo!'); return; }
-      const compatibilidade = compatibilidadeStr ? compatibilidadeStr.split(',').map(c => c.trim()).filter(c => c) : [];
-      const dados = { modelo, tipo, observacao, compatibilidade, preco, estoque };
+      const dados = { marca, modelo, tipo, observacao, preco, estoque };
       if (id) {
         fetch(`/api/telas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => fecharModal());
       } else {

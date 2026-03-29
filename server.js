@@ -102,6 +102,43 @@ function salvarDados() {
 carregarDados();
 
 // =====================================
+// MARCAS CONHECIDAS
+// =====================================
+const MARCAS = [
+  'samsung', 'motorola', 'moto', 'xiaomi', 'redmi', 'poco',
+  'iphone', 'apple', 'lg', 'oppo', 'realme', 'vivo',
+  'nokia', 'asus', 'zenfone', 'huawei', 'honor', 'oneplus',
+  'lenovo', 'multilaser', 'positivo', 'alcatel', 'tcl', 'zte'
+];
+
+// Mapear variações para marca padrão
+const MARCA_ALIASES = {
+  'moto': 'motorola',
+  'apple': 'iphone',
+  'redmi': 'xiaomi',
+  'poco': 'xiaomi',
+  'zenfone': 'asus',
+  'honor': 'huawei'
+};
+
+// =====================================
+// PALAVRAS PARA IGNORAR (STOPWORDS)
+// =====================================
+const STOPWORDS = [
+  'bom', 'boa', 'dia', 'tarde', 'noite', 'tudo', 'bem', 'ola', 'olá', 'oi', 'oie', 'oii',
+  'gostaria', 'queria', 'quero', 'preciso', 'saber', 'valor', 'preço', 'preco', 'quanto',
+  'custa', 'fica', 'qual', 'display', 'tela', 'do', 'da', 'de', 'o', 'a', 'os', 'as',
+  'um', 'uma', 'para', 'por', 'que', 'se', 'eu', 'voce', 'você', 'me', 'meu', 'minha',
+  'tem', 'tenho', 'favor', 'pfv', 'pf', 'porfavor', 'obg', 'obrigado', 'obrigada',
+  'ola', 'hi', 'hello', 'hey', 'amigo', 'amiga', 'amigos'
+];
+
+// =====================================
+// ESTADO DE CLIENTES AGUARDANDO MARCA
+// =====================================
+const clientesAguardandoMarca = new Map(); // from -> { termo, marcasEncontradas, produtos }
+
+// =====================================
 // UTILITÁRIOS
 // =====================================
 function normalizar(texto) {
@@ -115,68 +152,98 @@ function normalizar(texto) {
     .trim();
 }
 
+// Extrair palavras relevantes (remover stopwords e marcas)
+function extrairPalavrasRelevantes(texto) {
+  const t = normalizar(texto);
+  const palavras = t.split(' ').filter(p => p.length > 0);
+  
+  // Remover stopwords e marcas
+  return palavras.filter(p => {
+    const isStopword = STOPWORDS.includes(p);
+    const isMarca = MARCAS.includes(p);
+    return !isStopword && !isMarca;
+  });
+}
+
+// Detectar marca na mensagem do cliente
+function detectarMarcaNaMensagem(texto) {
+  const t = normalizar(texto);
+  const palavras = t.split(' ');
+  
+  for (const p of palavras) {
+    if (MARCAS.includes(p)) {
+      // Normalizar marca (ex: 'moto' -> 'motorola')
+      return MARCA_ALIASES[p] || p;
+    }
+  }
+  return null;
+}
+
+// Normalizar marca do cadastro
+function normalizarMarca(marca) {
+  if (!marca) return null;
+  const m = normalizar(marca);
+  return MARCA_ALIASES[m] || m;
+}
+
 // =====================================
-// BUSCAR NO BANCO PELO TEXTO DA MENSAGEM
+// BUSCAR NO BANCO - LÓGICA POR PALAVRAS E MARCAS
 // =====================================
 function buscarNoBanco(texto) {
-  if (!dadosTelas?.telas) return { disponiveis: [], indisponiveis: [] };
+  if (!dadosTelas?.telas) return { disponiveis: [], indisponiveis: [], porMarca: {} };
   
-  const t = normalizar(texto);
-  const matchExato = [];
-  const matchParcial = [];
-  const matchCompatibilidade = [];
+  // Extrair palavras relevantes
+  const palavras = extrairPalavrasRelevantes(texto);
+  
+  // Detectar se cliente já informou a marca
+  const marcaInformada = detectarMarcaNaMensagem(texto);
+  
+  const encontrados = [];
   const indisponiveis = [];
-  
-  const codigosTexto = t.match(/\b[a-z]\d{2,3}[a-z]*\b/gi) || [];
+  const porMarca = {};
   
   dadosTelas.telas.forEach(tela => {
     const modeloNorm = normalizar(tela.modelo);
-    const todosCodigos = modeloNorm.match(/[a-z]?\d{2,3}[a-z]*\b/gi) || [];
-    const codigoModelo = todosCodigos.length > 0 ? todosCodigos[todosCodigos.length - 1] : modeloNorm;
+    const marcaTela = normalizarMarca(tela.marca) || 'outros';
     
-    let tipoMatch = null;
+    // Verificar se alguma palavra relevante está no modelo
+    const encontrou = palavras.some(p => modeloNorm.includes(p));
     
-    if (t.includes(modeloNorm)) {
-      tipoMatch = 'exato';
-    }
-    
-    if (!tipoMatch && codigoModelo && codigoModelo.length >= 2) {
-      if (codigosTexto.includes(codigoModelo) || t.includes(codigoModelo)) {
-        tipoMatch = 'parcial';
+    if (encontrou) {
+      // Se cliente informou marca, filtrar só essa marca
+      if (marcaInformada) {
+        if (marcaTela !== marcaInformada) return; // Pula se não for a marca
       }
-    }
-    
-    if (!tipoMatch && tela.compatibilidade) {
-      for (const comp of tela.compatibilidade) {
-        if (t.includes(normalizar(comp))) {
-          tipoMatch = 'compatibilidade';
-          break;
-        }
-      }
-    }
-    
-    if (tipoMatch) {
+      
+      const item = { ...tela, marcaDetectada: marcaTela };
+      
       if (tela.ativo && tela.estoque > 0) {
-        if (tipoMatch === 'exato') matchExato.push(tela);
-        else if (tipoMatch === 'parcial') matchParcial.push(tela);
-        else matchCompatibilidade.push(tela);
+        encontrados.push(item);
+        
+        // Agrupar por marca
+        if (!porMarca[marcaTela]) porMarca[marcaTela] = [];
+        porMarca[marcaTela].push(item);
       } else {
-        indisponiveis.push(tela);
+        indisponiveis.push(item);
       }
     }
   });
   
-  const idsUnicos = new Set();
-  const removerDuplicados = arr => arr.filter(tela => !idsUnicos.has(tela.id) && idsUnicos.add(tela.id));
-  
   return { 
-    disponiveis: [
-      ...removerDuplicados(matchExato),
-      ...removerDuplicados(matchParcial),
-      ...removerDuplicados(matchCompatibilidade)
-    ], 
-    indisponiveis: removerDuplicados(indisponiveis)
+    disponiveis: encontrados, 
+    indisponiveis: indisponiveis,
+    porMarca: porMarca,
+    marcasEncontradas: Object.keys(porMarca),
+    palavrasBuscadas: palavras
   };
+}
+
+// =====================================
+// FORMATAR RESPOSTA DA TELA
+// =====================================
+function formatarRespostaTela(tela) {
+  const obs = tela.observacao ? ` ${tela.observacao}` : '';
+  return `${tela.modelo} ${tela.tipo}${obs}\tR$ ${tela.preco.toFixed(2)}`;
 }
 
 // =====================================
@@ -186,6 +253,18 @@ function ehNumeroTeste(from) {
   if (!modoTeste) return false;
   if (numerosTeste.length === 0) return false;
   return numerosTeste.includes(from);
+}
+
+// =====================================
+// VERIFICAR SE MODO TESTE BLOQUEIA NÚMERO
+// =====================================
+function modoTesteBloqueia(from) {
+  // Se modo teste está desativado, não bloqueia ninguém
+  if (!modoTeste) return false;
+  // Se modo teste está ativo mas não há números cadastrados, não bloqueia
+  if (numerosTeste.length === 0) return false;
+  // Se modo teste está ativo e o número NÃO está na lista, BLOQUEIA
+  return !numerosTeste.includes(from);
 }
 
 // =====================================
@@ -335,9 +414,9 @@ app.post("/api/telas", (req, res) => {
   const nova = {
     id: Date.now().toString(),
     modelo: req.body.modelo || "",
+    marca: req.body.marca || "",
     tipo: req.body.tipo || "",
     observacao: req.body.observacao || "",
-    compatibilidade: req.body.compatibilidade || [],
     preco: parseFloat(req.body.preco) || 0,
     estoque: parseInt(req.body.estoque) || 0,
     ativo: req.body.ativo !== false
@@ -410,6 +489,11 @@ app.get("/api/stats", (req, res) => {
   });
 });
 
+// API - Marcas disponíveis
+app.get("/api/marcas", (req, res) => {
+  res.json(MARCAS);
+});
+
 // WhatsApp - Desconectar
 app.post("/api/disconnect", async (req, res) => {
   if (whatsappClient) {
@@ -475,6 +559,14 @@ function initWhatsApp() {
     const texto = msg.body?.trim() || "";
     if (!texto || texto.length > 500) return;
 
+    // =====================================
+    // MODO TESTE - BLOQUEAR NÚMEROS NÃO AUTORIZADOS
+    // =====================================
+    if (modoTesteBloqueia(from)) {
+      log('INFO', 'TESTE', `Mensagem IGNORADA de número não autorizado: ${from.substring(0, 20)}...`);
+      return; // Ignora completamente mensagens de números não autorizados
+    }
+
     estatisticas.mensagensRecebidas++;
 
     await processarMensagem(msg, from, texto);
@@ -495,6 +587,59 @@ async function processarMensagem(msg, from, texto) {
   const ehTeste = ehNumeroTeste(from);
   if (ehTeste) {
     log('INFO', 'TESTE', `Mensagem de número de teste: ${from.substring(0, 20)}...`);
+  }
+  
+  // =====================================
+  // VERIFICAR SE ESTÁ AGUARDANDO ESCOLHA DE MARCA
+  // =====================================
+  if (clientesAguardandoMarca.has(from)) {
+    const estado = clientesAguardandoMarca.get(from);
+    const marcas = estado.marcasEncontradas;
+    
+    // Verificar se digitou número ou nome da marca
+    let marcaEscolhida = null;
+    
+    // Se digitou número
+    if (/^\d+$/.test(t)) {
+      const idx = parseInt(t) - 1;
+      if (idx >= 0 && idx < marcas.length) {
+        marcaEscolhida = marcas[idx];
+      }
+    } else {
+      // Se digitou nome da marca
+      marcaEscolhida = MARCA_ALIASES[t] || t;
+      if (!marcas.includes(marcaEscolhida)) {
+        marcaEscolhida = null;
+      }
+    }
+    
+    if (marcaEscolhida) {
+      clientesAguardandoMarca.delete(from);
+      
+      // Retornar produtos da marca escolhida
+      const produtos = estado.porMarca[marcaEscolhida] || [];
+      
+      if (produtos.length > 0) {
+        let resposta = `✅ ${marcaEscolhida.toUpperCase()} - ${produtos.length} produto(s) encontrado(s):\n\n`;
+        produtos.forEach(tela => {
+          resposta += formatarRespostaTela(tela) + '\n';
+        });
+        
+        if (!botAtivo) {
+          resposta += '\n⚠️ No momento não temos atendentes disponíveis.';
+        }
+        
+        await msg.reply(resposta);
+        log('INFO', 'BUSCA', `Cliente escolheu marca: ${marcaEscolhida}`);
+      } else {
+        await msg.reply('Nenhum produto encontrado para essa marca.');
+      }
+      return;
+    } else {
+      // Resposta inválida
+      await msg.reply('Opção inválida. Digite o número ou nome da marca.');
+      return;
+    }
   }
   
   // Verificar se está pausado (atendente)
@@ -551,22 +696,45 @@ async function processarMensagem(msg, from, texto) {
     }
     
     // Buscar no banco
-    const { disponiveis, indisponiveis } = buscarNoBanco(texto);
+    const resultadoOffline = buscarNoBanco(texto);
+    const { disponiveis, indisponiveis, porMarca, marcasEncontradas, palavrasBuscadas } = resultadoOffline;
     
-    if (disponiveis.length > 0) {
-      let resposta = '';
-      disponiveis.forEach(tela => {
-        const obs = tela.observacao ? ` ${tela.observacao}` : '';
-        resposta += `${tela.modelo} ${tela.tipo}${obs}\tR$ ${tela.preco.toFixed(2)}\n`;
-      });
-      resposta += '\n⚠️ No momento não temos atendentes disponíveis para fechar seu pedido.\n\nAssim que alguém ficar livre, irá atendê-lo.';
-      await msg.reply(resposta);
-      return;
-    }
-    
-    if (indisponiveis.length > 0) {
-      await msg.reply('Esse modelo não está disponível no momento.\n\n⚠️ No momento não temos atendentes disponíveis.\n\nTodos estão ocupados, aguarde que alguém irá atendê-lo.');
-      return;
+    if (disponiveis.length > 0 || indisponiveis.length > 0) {
+      // Se encontrou em MAIS DE UMA MARCA, perguntar
+      if (marcasEncontradas.length > 1) {
+        // Salvar estado e perguntar marca
+        clientesAguardandoMarca.set(from, {
+          porMarca: porMarca,
+          marcasEncontradas: marcasEncontradas,
+          termo: texto
+        });
+        
+        let msgMarcas = `🔍 Encontrei "${palavrasBuscadas.join(' ')}" em ${marcasEncontradas.length} marcas:\n\n`;
+        marcasEncontradas.forEach((marca, idx) => {
+          const qtd = porMarca[marca].length;
+          msgMarcas += `${idx + 1} - ${marca.toUpperCase()} (${qtd})\n`;
+        });
+        msgMarcas += '\nDigite o número da marca do seu aparelho:';
+        
+        await msg.reply(msgMarcas);
+        return;
+      }
+      
+      // Encontrou em 1 marca só - retorna direto
+      if (disponiveis.length > 0) {
+        let resposta = '';
+        disponiveis.forEach(tela => {
+          resposta += formatarRespostaTela(tela) + '\n';
+        });
+        resposta += '\n⚠️ No momento não temos atendentes disponíveis para fechar seu pedido.\n\nAssim que alguém ficar livre, irá atendê-lo.';
+        await msg.reply(resposta);
+        return;
+      }
+      
+      if (indisponiveis.length > 0) {
+        await msg.reply('Esse modelo não está disponível no momento.\n\n⚠️ No momento não temos atendentes disponíveis.\n\nTodos estão ocupados, aguarde que alguém irá atendê-lo.');
+        return;
+      }
     }
     
     // Se mencionou tela/preço mas não encontrou
@@ -635,7 +803,8 @@ async function processarMensagem(msg, from, texto) {
   // =====================================
   // BUSCAR NO BANCO DE DADOS
   // =====================================
-  const { disponiveis, indisponiveis } = buscarNoBanco(texto);
+  const resultado = buscarNoBanco(texto);
+  const { disponiveis, indisponiveis, porMarca, marcasEncontradas, palavrasBuscadas } = resultado;
   
   if (disponiveis.length > 0 || indisponiveis.length > 0) {
     // Números de teste ignoram verificação de horário
@@ -646,11 +815,32 @@ async function processarMensagem(msg, from, texto) {
     
     estatisticas.consultasHoje++;
     
+    // Se encontrou em MAIS DE UMA MARCA, perguntar
+    if (marcasEncontradas.length > 1) {
+      // Salvar estado e perguntar marca
+      clientesAguardandoMarca.set(from, {
+        porMarca: porMarca,
+        marcasEncontradas: marcasEncontradas,
+        termo: texto
+      });
+      
+      let msgMarcas = `🔍 Encontrei "${palavrasBuscadas.join(' ')}" em ${marcasEncontradas.length} marcas:\n\n`;
+      marcasEncontradas.forEach((marca, idx) => {
+        const qtd = porMarca[marca].length;
+        msgMarcas += `${idx + 1} - ${marca.toUpperCase()} (${qtd})\n`;
+      });
+      msgMarcas += '\nDigite o número da marca do seu aparelho:';
+      
+      await msg.reply(msgMarcas);
+      log('INFO', 'BUSCA', `Perguntando marca: ${marcasEncontradas.join(', ')}${ehTeste ? ' [TESTE]' : ''}`);
+      return;
+    }
+    
+    // Encontrou em 1 marca só - retorna direto
     if (disponiveis.length > 0) {
       let resposta = '';
       disponiveis.forEach(tela => {
-        const obs = tela.observacao ? ` ${tela.observacao}` : '';
-        resposta += `${tela.modelo} ${tela.tipo}${obs}\tR$ ${tela.preco.toFixed(2)}\n`;
+        resposta += formatarRespostaTela(tela) + '\n';
       });
       await msg.reply(resposta);
       log('INFO', 'BUSCA', `Encontrado: ${disponiveis.length} telas${ehTeste ? ' [TESTE]' : ''}`);
