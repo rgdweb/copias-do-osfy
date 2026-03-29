@@ -102,13 +102,14 @@ function salvarDados() {
 carregarDados();
 
 // =====================================
-// MARCAS CONHECIDAS
+// MARCAS CONHECIDAS (ordem alfabética)
 // =====================================
 const MARCAS = [
-  'samsung', 'motorola', 'moto', 'xiaomi', 'redmi', 'poco',
-  'iphone', 'apple', 'lg', 'oppo', 'realme', 'vivo',
-  'nokia', 'asus', 'zenfone', 'huawei', 'honor', 'oneplus',
-  'lenovo', 'multilaser', 'positivo', 'alcatel', 'tcl', 'zte'
+  'alcatel', 'apple', 'asus', 'huawei', 'honor',
+  'iphone', 'lenovo', 'lg', 'motorola', 'moto',
+  'multilaser', 'nokia', 'oneplus', 'oppo', 'poco',
+  'positivo', 'realme', 'redmi', 'samsung', 'tcl',
+  'vivo', 'xiaomi', 'zenfone', 'zte'
 ];
 
 // Mapear variações para marca padrão
@@ -875,8 +876,10 @@ async function processarMensagem(msg, from, texto) {
 }
 
 function getMenu() {
-  return `Olá, se for referente a TELAS, especifique exatamente o modelo.
+  const emp = dadosTelas.empresa?.nome || "SUA LOJA";
+  return `Olá! Seja bem-vindo(a) à ${emp} 📱
 
+Se for referente a TELAS, especifique o modelo:
 Ex: Samsung A20S, Moto G05, Moto G30, iPhone 13
 
 SE NÃO digite uma opção:
@@ -891,8 +894,10 @@ SE NÃO digite uma opção:
 }
 
 function getMenuOffline() {
-  return `Olá, se for referente a TELAS, especifique exatamente o modelo.
+  const emp = dadosTelas.empresa?.nome || "SUA LOJA";
+  return `Olá! Seja bem-vindo(a) à ${emp} 📱
 
+Se for referente a TELAS, especifique o modelo:
 Ex: Samsung A20S, Moto G05, Moto G30, iPhone 13
 
 ⚠️ No momento não temos atendentes disponíveis para fechar pedidos.
