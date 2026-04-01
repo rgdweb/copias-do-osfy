@@ -1,12 +1,5 @@
 ;==============================================================
-; YOUTUBE VIEWER PRO v4.0 - VERSAO FINAL FUNCIONANDO
-;==============================================================
-;
-; Carrega proxies do arquivo proxy.txt
-; Abre Edge com proxy
-; Assisti o tempo configurado
-; Fecha e abre proximo video
-;
+; YOUTUBE VIEWER PRO v4.1 - CORRIGIDO
 ;==============================================================
 
 #SingleInstance Force
@@ -38,7 +31,7 @@ global PastaExt := ""
 Gui, Font, s11 cWhite, Arial
 Gui, Color, 0x1a1a2e
 
-Gui, Add, Text, x0 y5 w620 h35 Center cCyan Background0x16213e, YOUTUBE VIEWER PRO v4.0
+Gui, Add, Text, x0 y5 w620 h35 Center cCyan Background0x16213e, YOUTUBE VIEWER PRO v4.1
 
 Gui, Font, s10 cWhite
 Gui, Add, GroupBox, x15 y45 w590 h80 cCyan, Video
@@ -86,14 +79,12 @@ Gui, Add, Text, x420 y460 w170 h25 vStatusTempo cLime, 0 min
 Gui, Add, Text, x420 y490 w170 h20, Situacao:
 Gui, Add, Text, x420 y510 w170 h20 vStatusSit cYellow, Aguardando
 
-Gui, Show, w620 h510, YouTube Viewer PRO v4.0
+Gui, Show, w620 h510, YouTube Viewer PRO v4.1
 
-; Criar pasta de extensoes
 PastaExt := PastaScript . "\proxy_ext"
 if !FileExist(PastaExt)
     FileCreateDir, %PastaExt%
 
-; Carregar proxies automaticamente
 CarregarProxies()
 return
 
@@ -124,7 +115,6 @@ CarregarProxies()
     if !FileExist(Arquivo)
     {
         Log("Arquivo proxy.txt nao encontrado")
-        Log("Coloque o arquivo na pasta do script")
         return
     }
     
@@ -137,7 +127,6 @@ CarregarProxies()
         if (L = "")
             continue
         
-        ; Formato: IP:PORTA:USUARIO:SENHA
         P := StrSplit(L, ":")
         if (P.Length() >= 4)
         {
@@ -151,10 +140,6 @@ CarregarProxies()
         GuiControl,, StatusProxies, %TotalProxies%
         Log("Carregados " . TotalProxies . " proxies!")
     }
-    else
-    {
-        Log("Nenhum proxy valido encontrado")
-    }
 }
 
 CriarExtensao(Proxy)
@@ -165,15 +150,30 @@ CriarExtensao(Proxy)
     if !FileExist(Pasta)
         FileCreateDir, %Pasta%
     
-    ; Manifest
-    M := "{`"version`":`"1.0`",`"manifest_version`":3,`"name`":`"ProxyExt`",`"permissions`":[`"proxy`",`"webRequest`",`"webRequestAuthProvider`"],`"host_permissions`":[`"<all_urls>`"],`"background`":{`"service_worker`":`"bg.js`"}}" 
-    FileDelete, %Pasta%\manifest.json
-    FileAppend, %M%, %Pasta%\manifest.json
+    ; Manifest.json - usando variaveis para evitar erro de aspas
+    M1 = {"version":"1.0","manifest_version":3,"name":"ProxyExt"
+    M2 = ,"permissions":["proxy","webRequest","webRequestAuthProvider"]
+    M3 = ,"host_permissions":["<all_urls>"]
+    M4 = ,"background":{"service_worker":"bg.js"}}
+    Manifest = %M1%%M2%%M3%%M4%
     
-    ; Background
-    B := "chrome.proxy.settings.set({value:{mode:`"fixed_servers`",rules:{singleProxy:{scheme:`"http`",host:`"" . Proxy.IP . "`",port:" . Proxy.Porta . "}}},scope:`"regular`"});`nchrome.webRequest.onAuthRequired.addListener((d)=>({authCredentials:{username:`"" . Proxy.User . "`",password:`"" . Proxy.Pass . "`"}}),{urls:[`"<all_urls>`"]},[`"blocking`"]);"
+    FileDelete, %Pasta%\manifest.json
+    FileAppend, %Manifest%, %Pasta%\manifest.json
+    
+    ; Background.js
+    B1 = chrome.proxy.settings.set({value:{mode:"fixed_servers",rules:{singleProxy:{scheme:"http",host:"
+    B2 = % Proxy.IP
+    B3 = ",port:
+    B4 = % Proxy.Porta
+    B5 = }}},scope:"regular"});chrome.webRequest.onAuthRequired.addListener((d)=>({authCredentials:{username:"
+    B6 = % Proxy.User
+    B7 = ",password:"
+    B8 = % Proxy.Pass
+    B9 = "}}),{urls:["<all_urls>"]},["blocking"]);"
+    Background = %B1%%B2%%B3%%B4%%B5%%B6%%B7%%B8%%B9%
+    
     FileDelete, %Pasta%\bg.js
-    FileAppend, %B%, %Pasta%\bg.js
+    FileAppend, %Background%, %Pasta%\bg.js
     
     return Pasta
 }
@@ -314,7 +314,6 @@ Rodar:
         ExtPath := ""
         if (UsarProxies and TotalProxies > 0)
         {
-            ; Trocar proxy a cada X videos
             if (Mod(Num, TrocarIP) = 1)
             {
                 ProxyIndex++
@@ -337,10 +336,8 @@ Rodar:
         else
             Run, msedge.exe "%LinkVideo%", , , PID
         
-        ; Esperar abrir
         Sleep, 7000
         
-        ; Verificar se abriu
         Process, Exist, msedge.exe
         if (ErrorLevel = 0)
         {
@@ -350,11 +347,9 @@ Rodar:
         
         Log("Edge aberto!")
         
-        ; Sortear tempo
         Random, Tempo, MinTempo, MaxTempo
         Log("Assistindo " . Tempo . " segundos...")
         
-        ; Contar tempo
         Passados := 0
         Loop, %Tempo%
         {
@@ -367,7 +362,6 @@ Rodar:
             if (Parar or !Rodando)
                 break
             
-            ; Verificar Edge
             Process, Exist, msedge.exe
             if (ErrorLevel = 0)
             {
@@ -378,12 +372,10 @@ Rodar:
             Sleep, 1000
             Passados++
             
-            ; Log a cada 20s
             if (Mod(Passados, 20) = 0)
                 Log("... " . Passados . "s / " . Tempo . "s")
         }
         
-        ; Contar
         if (Passados >= Tempo * 0.7)
         {
             VideosOK++
@@ -393,12 +385,10 @@ Rodar:
         
         Att()
         
-        ; Fechar Edge
         Log("Fechando Edge...")
         Process, Close, msedge.exe
         Sleep, 2000
         
-        ; Pausa
         if (Num < TotalVideos and !Parar and Rodando)
         {
             Log("Aguardando 3s...")
@@ -406,7 +396,6 @@ Rodar:
         }
     }
     
-    ; FIM
     Rodando := false
     Process, Close, msedge.exe
     
