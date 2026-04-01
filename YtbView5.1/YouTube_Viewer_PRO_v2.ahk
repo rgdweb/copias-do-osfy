@@ -50,7 +50,7 @@ Gui, Add, Text, x20 y10 w660 h25 Center cCyan BackgroundTrans, =================
 Gui, Font, s12 cCyan Bold
 Gui, Add, Text, x20 y15 w660 h30 Center BackgroundTrans, YOUTUBE VIEWER PRO v2.0
 Gui, Font, s8 cGray Normal
-Gui, Add, Text, x20 y42 w660 h20 Center BackgroundTrans, Gerador de Visualizacoes com Proxies Automaticos - 100% Gratuito
+Gui, Add, Text, x20 y42 w660 h20 Center BackgroundTrans, Gerador de Visualizacoes com Proxies Automaticos - Gratuito
 Gui, Font, s10 cWhite
 
 ; Secao de Link
