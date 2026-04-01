@@ -1,13 +1,15 @@
 ;==============================================================
-; YOUTUBE VIEWER PRO v2.2 - CORRIGIDO
+; YOUTUBE VIEWER PRO v2.3 - SIMPLES E FUNCIONAL
 ;==============================================================
 ;
-; CORRECOES v2.2:
-; - Foca na janela do Edge antes de interagir
-; - Clica no video para dar play
-; - Nao abre DevTools
-; - Fecha no tempo exato
-; - Abre proximo video automaticamente
+; LOGICA SIMPLES:
+; 1. Abre Edge com o video
+; 2. Espera o tempo configurado (sem clicar em nada!)
+; 3. Fecha Edge
+; 4. Abre proximo video
+; 5. Repete
+;
+; SEM cliques, SEM interacoes, SEM DevTools
 ;
 ;==============================================================
 
@@ -15,144 +17,107 @@
 #NoEnv
 SetWorkingDir %A_ScriptDir%
 
-; Variaveis globais
 global Rodando := false
 global Pausado := false
 global TotalVideos := 0
 global VideosAssistidos := 0
 global TempoTotal := 0
-global EdgePID := 0
-global ProxyAtual := 0
+global Parar := false
+global LinkAtual := ""
 global ListaProxies := []
 global TotalProxies := 0
-global Parar := false
+global ProxyAtual := 0
 global PastaScript := A_ScriptDir
 global PastaExtensions := ""
-global LinkAtual := ""
 
-; Configuracoes
 global ConfigMinTempo := 45
 global ConfigMaxTempo := 120
-global ConfigTrocarProxy := 3
 global ConfigUsarProxy := true
 
 ; ============================================================
-; INTERFACE GRAFICA
+; INTERFACE
 ; ============================================================
 
 Gui, Font, s10 cWhite, Segoe UI
 Gui, Color, 1a1a2e, 16213e
 
-Gui, Add, Text, x20 y10 w660 h25 Center cCyan BackgroundTrans, ================================================================
+Gui, Add, Text, x20 y10 w560 h25 Center cCyan, ================================================================
 Gui, Font, s12 cCyan Bold
-Gui, Add, Text, x20 y15 w660 h30 Center BackgroundTrans, YOUTUBE VIEWER PRO v2.2
+Gui, Add, Text, x20 y15 w560 h30 Center, YOUTUBE VIEWER PRO v2.3
 Gui, Font, s8 cGray Normal
-Gui, Add, Text, x20 y42 w660 h20 Center BackgroundTrans, Versao Corrigida - Foca no Edge e NAO abre DevTools
+Gui, Add, Text, x20 y42 w560 h20 Center, Versao Simples - Abre, Espera, Fecha
 Gui, Font, s10 cWhite
 
-Gui, Add, GroupBox, x20 y65 w660 h115 cCyan, Configuracoes do Video
-Gui, Add, Text, x35 y90 w200 h20 BackgroundTrans, Insira o link do video:
-Gui, Add, Edit, x35 y110 w630 h25 vLinkYouTube, https://www.youtube.com/
+Gui, Add, GroupBox, x20 y65 w560 h90 cCyan, Video
+Gui, Add, Text, x35 y85 w100 h20, Link do video:
+Gui, Add, Edit, x35 y105 w530 h25 vLinkYouTube, https://www.youtube.com/watch?v=
 
-Gui, Add, Text, x35 y140 w80 h20 BackgroundTrans, Tipo:
-Gui, Add, DropDownList, x120 y137 w100 vTipoLink Choose1, Video|Shorts
-Gui, Add, CheckBox, x240 y140 w200 vUsarProxy Checked BackgroundTrans, Usar proxies automaticos
+Gui, Add, GroupBox, x20 y165 w270 h130 cCyan, Configuracoes
+Gui, Add, Text, x35 y190 w100 h20, Quantidade:
+Gui, Add, Edit, x140 y187 w60 h25 vQuantidade Center, 10
 
-Gui, Add, GroupBox, x20 y190 w320 h145 cCyan, Proxy / IP
-Gui, Add, Text, x35 y215 w120 h20 BackgroundTrans, Proxies carregados:
-Gui, Add, Text, x160 y215 w80 h20 vStatusProxies cLime BackgroundTrans, 0
+Gui, Add, Text, x35 y220 w100 h20, Tempo min (seg):
+Gui, Add, Edit, x140 y217 w60 h25 vMinTempo Center, 45
 
-Gui, Add, Text, x35 y240 w120 h20 BackgroundTrans, Proxy atual:
-Gui, Add, Text, x160 y240 w160 h20 vProxyInfo cYellow BackgroundTrans, Nenhum
+Gui, Add, Text, x35 y250 w100 h20, Tempo max (seg):
+Gui, Add, Edit, x140 y247 w60 h25 vMaxTempo Center, 120
 
-Gui, Add, Text, x35 y265 w120 h20 BackgroundTrans, Trocar IP a cada:
-Gui, Add, Edit, x160 y262 w50 h20 vTrocarProxy Center, 3
-Gui, Add, Text, x215 y265 w80 h20 BackgroundTrans, videos
+Gui, Add, CheckBox, x35 y280 w200 h20 vUsarProxy Checked, Usar proxies
 
-Gui, Add, GroupBox, x360 y190 w320 h145 cCyan, Visualizacoes
-Gui, Add, Text, x375 y215 w150 h20 BackgroundTrans, Quantidade:
-Gui, Add, Edit, x530 y212 w80 h25 vQuantidade Center, 10
+Gui, Add, GroupBox, x310 y165 w270 h130 cCyan, Proxy
+Gui, Add, Text, x325 y190 w100 h20, Carregados:
+Gui, Add, Text, x430 y190 w60 h20 vStatusProxies cLime, 0
 
-Gui, Add, Text, x375 y245 w100 h20 BackgroundTrans, Tempo minimo:
-Gui, Add, Edit, x475 y242 w50 h20 vMinTempo Center, 45
-Gui, Add, Text, x530 y245 w20 h20 BackgroundTrans, seg
+Gui, Add, Text, x325 y220 w100 h20, Proxy atual:
+Gui, Add, Text, x430 y220 w120 h20 vProxyInfo cYellow, Nenhum
 
-Gui, Add, Text, x375 y270 w100 h20 BackgroundTrans, Tempo maximo:
-Gui, Add, Edit, x475 y267 w50 h20 vMaxTempo Center, 120
-Gui, Add, Text, x530 y270 w20 h20 BackgroundTrans, seg
+Gui, Add, Button, x325 y260 w100 h25 gCarregarProxies, Carregar Proxies
 
-Gui, Add, Button, x20 y345 w150 h40 gIniciar, INICIAR
-Gui, Add, Button, x180 y345 w80 h40 gPausar, PAUSAR
-Gui, Add, Button, x270 y345 w80 h40 gParar, PARAR
-Gui, Add, Button, x360 y345 w100 h40 gCarregarProxies, CARREGAR PROXIES
-Gui, Add, Button, x470 y345 w100 h40 gTestarProxy, TESTAR
-Gui, Add, Button, x580 y345 w100 h40 gAjuda, AJUDA
+Gui, Add, Button, x20 y305 w120 h40 gIniciar, INICIAR
+Gui, Add, Button, x150 y305 w80 h40 gPausar, PAUSAR
+Gui, Add, Button, x240 y305 w80 h40 gParar, PARAR
 
-Gui, Add, GroupBox, x20 y395 w420 h180 cCyan, Log de Atividades
-Gui, Add, Edit, x30 y415 w400 h150 vLogEdit ReadOnly HScroll -Wrap
+Gui, Add, GroupBox, x20 y355 w350 h160 cCyan, Log
+Gui, Add, Edit, x30 y375 w330 h130 vLogEdit ReadOnly
 
-Gui, Add, GroupBox, x450 y395 w230 h180 cCyan, Status
-Gui, Add, Text, x465 y420 w200 h20 BackgroundTrans, Videos assistidos:
-Gui, Add, Text, x465 y440 w200 h30 vStatusVideos cLime BackgroundTrans, 0 / 0
+Gui, Add, GroupBox, x380 y355 w200 h160 cCyan, Status
+Gui, Add, Text, x395 y380 w170 h20, Videos:
+Gui, Add, Text, x395 y400 w170 h25 vStatusVideos cLime, 0 / 0
+Gui, Add, Text, x395 y435 w170 h20, Tempo total:
+Gui, Add, Text, x395 y455 w170 h25 vStatusTempo cLime, 0h 0m 0s
+Gui, Add, Text, x395 y490 w170 h20, Status:
+Gui, Add, Text, x395 y510 w170 h20 vStatusAtual cYellow, Aguardando
 
-Gui, Add, Text, x465 y480 w200 h20 BackgroundTrans, Tempo total:
-Gui, Add, Text, x465 y500 w200 h30 vStatusTempo cLime BackgroundTrans, 0h 0m 0s
+Gui, Add, Text, x20 y525 w560 h20 Center cGray, ESC = Sair | F12 = Pausar
 
-Gui, Add, Text, x465 y540 w200 h20 BackgroundTrans, Status:
-Gui, Add, Text, x465 y560 w200 h20 vStatusAtual cYellow BackgroundTrans, Aguardando...
+Gui, Show, w600 h550, YouTube Viewer PRO v2.3
 
-Gui, Add, Text, x20 y585 w660 h20 Center cGray BackgroundTrans, F12 = Pausar | ESC = Sair
-
-Gui, Show, w700 h610, YouTube Viewer PRO v2.2
-
-CriarEstrutura()
-CarregarProxiesAutomatico()
-
+CarregarProxiesAuto()
 return
 
 ; ============================================================
-; FUNCOES BASICAS
+; FUNCOES
 ; ============================================================
 
-CriarEstrutura()
+CarregarProxiesAuto()
 {
-    global PastaScript, PastaExtensions
-    PastaExtensions := PastaScript . "\proxy_extensions"
-    if !FileExist(PastaExtensions)
-        FileCreateDir, %PastaExtensions%
-    
-    ArquivoProxy := PastaScript . "\proxy.txt"
-    if !FileExist(ArquivoProxy)
-    {
-        ProxiesPadrao := "194.38.19.174:6736:nypkwabo:b9l2ztpk81vl`n"
-        . "45.87.50.25:7085:nypkwabo:b9l2ztpk81vl`n"
-        FileAppend, %ProxiesPadrao%, %ArquivoProxy%
-    }
-}
-
-CarregarProxiesAutomatico()
-{
-    global PastaScript, ListaProxies, TotalProxies
-    
-    ArquivoProxy := PastaScript . "\proxy.txt"
-    if !FileExist(ArquivoProxy)
-    {
-        AdicionarLog("[!] proxy.txt nao encontrado")
+    global
+    Arquivo := PastaScript . "\proxy.txt"
+    if !FileExist(Arquivo)
         return
-    }
     
     ListaProxies := []
     TotalProxies := 0
     
-    Loop, Read, %ArquivoProxy%
+    Loop, Read, %Arquivo%
     {
-        Linha := Trim(A_LoopReadLine)
-        if (Linha = "")
+        L := Trim(A_LoopReadLine)
+        if (L = "")
             continue
-        Partes := StrSplit(Linha, ":")
-        if (Partes.Length() >= 4)
+        P := StrSplit(L, ":")
+        if (P.Length() >= 4)
         {
-            ListaProxies.Push({IP: Partes[1], Porta: Partes[2], Usuario: Partes[3], Senha: Partes[4]})
+            ListaProxies.Push({IP: P[1], Porta: P[2], User: P[3], Pass: P[4]})
             TotalProxies++
         }
     }
@@ -160,45 +125,44 @@ CarregarProxiesAutomatico()
     if (TotalProxies > 0)
     {
         GuiControl,, StatusProxies, %TotalProxies%
-        AdicionarLog("[OK] " . TotalProxies . " proxies carregados")
+        Log("Carregados " . TotalProxies . " proxies")
     }
 }
 
-AdicionarLog(Texto)
+Log(Txt)
 {
-    FormatTime, Hora,, HH:mm:ss
-    GuiControlGet, LogAtual,, LogEdit
-    GuiControl,, LogEdit, % "[" . Hora . "] " . Texto . "`r`n" . LogAtual
+    FormatTime, H,, HH:mm:ss
+    GuiControlGet, L,, LogEdit
+    GuiControl,, LogEdit, [%H%] %Txt%`r`n%L%
 }
 
-AtualizarStatus()
+AttStatus()
 {
-    global VideosAssistidos, TotalVideos, TempoTotal, Rodando, Pausado
-    Horas := TempoTotal // 3600
-    Minutos := (TempoTotal mod 3600) // 60
-    Segundos := TempoTotal mod 60
-    GuiControl,, StatusVideos, % VideosAssistidos . " / " . TotalVideos
-    GuiControl,, StatusTempo, % Horas . "h " . Minutos . "m " . Segundos . "s"
-    GuiControl,, StatusAtual, % Rodando ? (Pausado ? "Pausado" : "Executando") : "Parado"
+    global
+    H := TempoTotal // 3600
+    M := (TempoTotal mod 3600) // 60
+    S := TempoTotal mod 60
+    GuiControl,, StatusVideos, %VideosAssistidos% / %TotalVideos%
+    GuiControl,, StatusTempo, %H%h %M%m %S%s
+    GuiControl,, StatusAtual, % Rodando ? (Pausado ? "Pausado" : "Rodando") : "Parado"
 }
 
-CriarExtensaoProxy(Proxy)
+CriarExtensaoProxy(IP, Porta, User, Pass)
 {
     global PastaExtensions
-    NomeExtensao := "proxy_" . Proxy.IP
-    PastaExtensao := PastaExtensions . "\" . NomeExtensao
-    if !FileExist(PastaExtensao)
-        FileCreateDir, %PastaExtensao%
+    Pasta := PastaExtensions . "\p" . IP
+    if !FileExist(Pasta)
+        FileCreateDir, %Pasta%
     
-    Manifest := "{""version"":""1.0.0"",""manifest_version"":3,""name"":""Proxy"",""permissions"":[""proxy"",""storage"",""webRequest"",""webRequestAuthProvider""],""host_permissions"":[""<all_urls>""],""background"":{""service_worker"":""background.js""}}"
-    FileDelete, %PastaExtensao%\manifest.json
-    FileAppend, %Manifest%, %PastaExtensao%\manifest.json
+    M := "{""version"":""1"",""manifest_version"":3,""name"":""P"",""permissions"":[""proxy"",""webRequest""],""host_permissions"":[""<all_urls>""],""background"":{""service_worker"":""b.js""}}"
+    FileDelete, %Pasta%\manifest.json
+    FileAppend, %M%, %Pasta%\manifest.json
     
-    Background := "chrome.proxy.settings.set({value:{mode:""fixed_servers"",rules:{singleProxy:{scheme:""http"",host:""" . Proxy.IP . """,port:" . Proxy.Porta . "}}},scope:""regular""});chrome.webRequest.onAuthRequired.addListener((d)=>({authCredentials:{username:""" . Proxy.Usuario . """,password:""" . Proxy.Senha . """}}),{urls:[""<all_urls>""]},[""blocking""]);"
-    FileDelete, %PastaExtensao%\background.js
-    FileAppend, %Background%, %PastaExtensao%\background.js
+    B := "chrome.proxy.settings.set({value:{mode:""fixed_servers"",rules:{singleProxy:{scheme:""http"",host:""" . IP . """,port:" . Porta . "}}},scope:""regular""});chrome.webRequest.onAuthRequired.addListener((d)=>({authCredentials:{username:""" . User . """,password:""" . Pass . """}}),{urls:[""<all_urls>""]},[""blocking""]);"
+    FileDelete, %Pasta%\b.js
+    FileAppend, %B%, %Pasta%\b.js
     
-    return PastaExtensao
+    return Pasta
 }
 
 ; ============================================================
@@ -206,50 +170,18 @@ CriarExtensaoProxy(Proxy)
 ; ============================================================
 
 CarregarProxies:
-    FileSelectFile, Arquivo, 3, %PastaScript%, Selecione proxy.txt, *.txt
-    if (Arquivo != "")
+    FileSelectFile, F, 3, %PastaScript%, Proxy, *.txt
+    if (F != "")
     {
-        FileCopy, %Arquivo%, %PastaScript%\proxy.txt, 1
-        CarregarProxiesAutomatico()
+        FileCopy, %F%, %PastaScript%\proxy.txt, 1
+        CarregarProxiesAuto()
     }
-return
-
-TestarProxy:
-    if (TotalProxies = 0)
-    {
-        MsgBox, Carregue os proxies primeiro!
-        return
-    }
-    Random, I, 1, TotalProxies
-    Proxy := ListaProxies[I]
-    AdicionarLog("[TESTE] " . Proxy.IP)
-    Ext := CriarExtensaoProxy(Proxy)
-    Run, msedge.exe --load-extension="%Ext%" https://whatismyipaddress.com
-return
-
-Ajuda:
-    MsgBox,
-    (
-    COMO FUNCIONA:
-    
-    1. Coloque o link do video
-    2. Configure quantidade e tempo
-    3. Clique INICIAR
-    
-    O script vai:
-    - Abrir Edge
-    - Dar play no video
-    - Assistir pelo tempo configurado
-    - Fechar Edge
-    - Abrir proximo video
-    - Repetir ate completar
-    )
 return
 
 Iniciar:
     if (Rodando)
     {
-        MsgBox, Ja esta rodando!
+        MsgBox, Ja rodando!
         return
     }
     
@@ -261,18 +193,17 @@ Iniciar:
         return
     }
     
-    Quantidade := Quantidade + 0
-    if (Quantidade < 1)
-        Quantidade := 1
+    TotalVideos := Quantidade + 0
+    if (TotalVideos < 1)
+        TotalVideos := 1
     
     ConfigMinTempo := MinTempo + 0
     ConfigMaxTempo := MaxTempo + 0
-    ConfigTrocarProxy := TrocarProxy + 0
     ConfigUsarProxy := UsarProxy
     
     if (ConfigUsarProxy and TotalProxies = 0)
     {
-        MsgBox, 4,, Proxies nao carregados. Continuar sem proxy?
+        MsgBox, 4,, Sem proxies. Continuar?
         IfMsgBox, No
             return
         ConfigUsarProxy := false
@@ -281,42 +212,40 @@ Iniciar:
     Rodando := true
     Pausado := false
     Parar := false
-    TotalVideos := Quantidade
     VideosAssistidos := 0
     TempoTotal := 0
     LinkAtual := LinkYouTube
     
-    AdicionarLog("========== INICIANDO ==========")
-    AdicionarLog("Videos: " . Quantidade)
-    AdicionarLog("Tempo: " . ConfigMinTempo . "-" . ConfigMaxTempo . "s")
+    Log("========== INICIANDO ==========")
+    Log("Videos: " . TotalVideos)
+    Log("Tempo: " . ConfigMinTempo . "-" . ConfigMaxTempo . "s")
+    AttStatus()
     
-    AtualizarStatus()
-    SetTimer, Executar, 100
+    SetTimer, Rodar, 100
 return
 
 Pausar:
     if (!Rodando)
         return
     Pausado := !Pausado
-    AdicionarLog(Pausado ? "[PAUSADO]" : "[CONTINUANDO]")
-    AtualizarStatus()
+    Log(Pausado ? "PAUSADO" : "CONTINUANDO")
+    AttStatus()
 return
 
 Parar:
     Parar := true
     Rodando := false
-    Pausado := false
     Process, Close, msedge.exe
-    AdicionarLog("[PARADO]")
-    AtualizarStatus()
+    Log("PARADO")
+    AttStatus()
 return
 
 ; ============================================================
-; EXECUCAO PRINCIPAL
+; EXECUCAO - SIMPLES!
 ; ============================================================
 
-Executar:
-    SetTimer, Executar, Off
+Rodar:
+    SetTimer, Rodar, Off
     
     Loop, %TotalVideos%
     {
@@ -329,185 +258,104 @@ Executar:
         if (Parar or !Rodando)
             break
         
-        NumVideo := A_Index
-        AdicionarLog("========== VIDEO " . NumVideo . "/" . TotalVideos . " ==========")
+        N := A_Index
+        Log("========== VIDEO " . N . "/" . TotalVideos . " ==========")
         
-        ; ========================================
-        ; 1. FECHAR EDGE ANTIGO
-        ; ========================================
+        ; 1. Fechar Edge anterior
         Process, Close, msedge.exe
         Sleep, 2000
         
-        ; ========================================
-        ; 2. ABRIR EDGE
-        ; ========================================
+        ; 2. Abrir Edge
         if (ConfigUsarProxy and TotalProxies > 0)
         {
             Random, ProxyAtual, 1, TotalProxies
-            Proxy := ListaProxies[ProxyAtual]
-            AdicionarLog("[PROXY] " . Proxy.IP . ":" . Proxy.Porta)
-            GuiControl,, ProxyInfo, % Proxy.IP . ":" . Proxy.Porta
-            Ext := CriarExtensaoProxy(Proxy)
-            Run, msedge.exe --load-extension="%Ext%" "%LinkAtual%", , , EdgePID
+            Pr := ListaProxies[ProxyAtual]
+            Log("Proxy: " . Pr.IP)
+            GuiControl,, ProxyInfo, % Pr.IP ":" Pr.Porta
+            Ext := CriarExtensaoProxy(Pr.IP, Pr.Porta, Pr.User, Pr.Pass)
+            Run, msedge.exe --load-extension="%Ext%" "%LinkAtual%", , , PID
         }
         else
         {
-            Run, msedge.exe "%LinkAtual%", , , EdgePID
+            Run, msedge.exe "%LinkAtual%", , , PID
         }
         
-        AdicionarLog("[ABRINDO] Edge...")
-        Sleep, 6000
+        Log("Abrindo Edge...")
         
-        ; ========================================
-        ; 3. VERIFICAR SE ABRIU
-        ; ========================================
-        WinWait, ahk_exe msedge.exe,, 10
-        if (ErrorLevel)
+        ; 3. Esperar abrir
+        Sleep, 8000
+        
+        ; 4. Verificar se abriu
+        Process, Exist, msedge.exe
+        if (ErrorLevel = 0)
         {
-            AdicionarLog("[ERRO] Edge nao abriu!")
+            Log("ERRO: Edge nao abriu!")
             continue
         }
         
-        ; ========================================
-        ; 4. PEGAR JANELA DO EDGE
-        ; ========================================
-        WinGet, EdgeID, ID, ahk_exe msedge.exe
-        if (EdgeID = "")
+        Log("Edge aberto!")
+        
+        ; 5. Esperar o tempo configurado (SEM CLICAR EM NADA!)
+        Random, Tempo, ConfigMinTempo, ConfigMaxTempo
+        Log("Assistindo " . Tempo . "s...")
+        
+        Restante := Tempo
+        Loop, %Tempo%
         {
-            AdicionarLog("[ERRO] Nao achou janela do Edge")
-            continue
-        }
-        
-        ; ========================================
-        ; 5. FOCAR NO EDGE
-        ; ========================================
-        WinActivate, ahk_id %EdgeID%
-        WinWaitActive, ahk_id %EdgeID%,, 5
-        Sleep, 1000
-        
-        AdicionarLog("[OK] Edge focado")
-        
-        ; ========================================
-        ; 6. CLICAR NO CENTRO PARA DAR PLAY
-        ; ========================================
-        ; Pegar tamanho da janela
-        WinGetPos, X, Y, W, H, ahk_id %EdgeID%
-        
-        ; Clicar no centro (onde fica o video)
-        CentroX := X + (W // 2)
-        CentroY := Y + (H // 2)
-        
-        ; Clicar para focar e dar play
-        Click, %CentroX%, %CentroY%
-        Sleep, 500
-        Click, %CentroX%, %CentroY%  ; Clica duas vezes para garantir
-        
-        AdicionarLog("[PLAY] Video iniciado")
-        
-        ; ========================================
-        ; 7. ASSISTIR O VIDEO
-        ; ========================================
-        Random, TempoTotalVideo, ConfigMinTempo, ConfigMaxTempo
-        AdicionarLog("[ASSISTINDO] " . TempoTotalVideo . " segundos")
-        
-        TempoPassado := 0
-        
-        Loop, %TempoTotalVideo%
-        {
-            ; Verificar pausa
+            if (Parar or !Rodando)
+                break
+            
             while (Pausado and Rodando)
                 Sleep, 500
             
-            ; Verificar se parou
             if (Parar or !Rodando)
                 break
             
             ; Verificar se Edge ainda existe
-            if !WinExist("ahk_id " EdgeID)
+            Process, Exist, msedge.exe
+            if (ErrorLevel = 0)
             {
-                AdicionarLog("[ERRO] Edge fechou!")
+                Log("Edge fechou inesperadamente!")
                 break
             }
             
-            ; Esperar 1 segundo
             Sleep, 1000
-            TempoPassado++
+            Restante--
             
-            ; A cada 15 segundos: interagir
-            if (Mod(TempoPassado, 15) = 0)
+            ; Atualizar a cada 10s
+            if (Mod(Tempo - Restante, 10) = 0)
             {
-                WinActivate, ahk_id %EdgeID%
-                Sleep, 100
-                
-                Random, Acao, 1, 10
-                
-                ; NAO usar F12 (abre DevTools)
-                ; Usar apenas teclas seguras
-                if (Acao <= 3)
-                {
-                    ; Scroll para baixo
-                    Click, WheelDown
-                }
-                else if (Acao <= 5)
-                {
-                    ; Pausar/continuar (tecla K)
-                    Send, {k}
-                }
-                else if (Acao <= 7)
-                {
-                    ; Mover mouse (mantem ativo)
-                    MouseMove, %CentroX%, %CentroY%
-                }
+                Log("Restam " . Restante . "s...")
             }
         }
         
-        ; ========================================
-        ; 8. CONTAR VISUALIZACAO
-        ; ========================================
-        if (TempoPassado >= (TempoTotalVideo * 0.8))  ; Se assistiu 80% ou mais
-        {
-            VideosAssistidos++
-            TempoTotal += TempoPassado
-            AdicionarLog("[OK] Video " . VideosAssistidos . " concluido")
-        }
-        else
-        {
-            AdicionarLog("[!] Video nao foi totalmente assistido")
-        }
+        ; 6. Contar visualizacao
+        VideosAssistidos++
+        TempoTotal += Tempo
+        Log("Video " . VideosAssistidos . " concluido!")
+        AttStatus()
         
-        AtualizarStatus()
-        
-        ; ========================================
-        ; 9. FECHAR EDGE
-        ; ========================================
-        AdicionarLog("[FECHANDO] Edge...")
-        WinClose, ahk_id %EdgeID%
+        ; 7. Fechar Edge
+        Log("Fechando Edge...")
+        Process, Close, msedge.exe
         Sleep, 2000
-        Process, Close, msedge.exe  ; Garantir que fechou
-        Sleep, 1000
         
-        ; ========================================
-        ; 10. PAUSA ANTES DO PROXIMO
-        ; ========================================
-        if (NumVideo < TotalVideos)
+        ; 8. Pausa antes do proximo
+        if (N < TotalVideos and !Parar and Rodando)
         {
-            Random, Pausa, 2000, 5000
-            AdicionarLog("[PAUSA] " . (Pausa/1000) . "s ate proximo...")
-            Sleep, %Pausa%
+            Log("Aguardando 3s...")
+            Sleep, 3000
         }
     }
     
-    ; ========================================
     ; FIM
-    ; ========================================
     Rodando := false
     Process, Close, msedge.exe
+    Log("========== CONCLUIDO ==========")
+    Log("Total: " . VideosAssistidos . " videos")
+    AttStatus()
     
-    AdicionarLog("========== CONCLUIDO ==========")
-    AdicionarLog("Total: " . VideosAssistidos . " videos")
-    AtualizarStatus()
-    
-    MsgBox, 64, Concluido, Videos assistidos: %VideosAssistidos%`nTempo total: %TempoTotal% segundos
+    MsgBox, 64, Concluido, Videos: %VideosAssistidos%`nTempo: %TempoTotal%s
 return
 
 ; ============================================================
@@ -521,7 +369,7 @@ return
 Esc::
     if (Rodando)
     {
-        MsgBox, 4, Sair, Parar e sair?
+        MsgBox, 4, Sair?, Parar e sair?
         IfMsgBox, Yes
         {
             Parar := true
@@ -535,7 +383,6 @@ Esc::
 return
 
 GuiClose:
-    Parar := true
     Process, Close, msedge.exe
     ExitApp
 return
